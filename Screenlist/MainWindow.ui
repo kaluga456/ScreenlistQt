@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1037</width>
+    <height>588</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter">
+      <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <widget class="QFrame" name="frLeft">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Shape::Box</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Shadow::Raised</enum>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="spacing">
+         <number>5</number>
+        </property>
+        <property name="leftMargin">
+         <number>5</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>5</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item>
+         <widget class="QFrame" name="frame_3">
+          <property name="frameShape">
+           <enum>QFrame::Shape::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Shadow::Raised</enum>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Profile</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Header</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Grid Rows</string>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Timestamp</string>
+             </property>
+            </widget>
+           </item>
+           <item row="13" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Timestamp Font</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Header Font</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Grid Columns</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="cbHeader"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="cbProfiles">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="locale">
+              <locale language="English" country="UnitedStates"/>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QPushButton" name="pbHeaderFont">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QLineEdit" name="leGridColumns">
+             <property name="inputMask">
+              <string>DD</string>
+             </property>
+             <property name="maxLength">
+              <number>2</number>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="1">
+            <widget class="QLineEdit" name="leGridRows">
+             <property name="inputMask">
+              <string>DD</string>
+             </property>
+             <property name="maxLength">
+              <number>2</number>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="11" column="1">
+            <widget class="QComboBox" name="cbTimestamp"/>
+           </item>
+           <item row="13" column="1">
+            <widget class="QPushButton" name="pbTimestampFont">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QLineEdit" name="leImageWidth">
+             <property name="inputMask">
+              <string>9999</string>
+             </property>
+             <property name="frame">
+              <bool>true</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Image Width</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QFrame" name="frRight">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>400</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Shape::Box</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Shadow::Raised</enum>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="pbOutputPath">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>100</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Output Path...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="cbOutputDir">
+          <property name="editable">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QTableView" name="tableView">
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="wordWrap">
+           <bool>false</bool>
+          </property>
+          <property name="cornerButtonEnabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1037</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionAddFiles"/>
+    <addaction name="actionAddFolder"/>
+    <addaction name="separator"/>
+    <addaction name="actionRemoveCompleted"/>
+    <addaction name="actionRemoveFailed"/>
+    <addaction name="actionRemoveAll"/>
+    <addaction name="separator"/>
+    <addaction name="actionStartProcessing"/>
+    <addaction name="actionStopProcessing"/>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuProcess">
+    <property name="title">
+     <string>Profile</string>
+    </property>
+    <addaction name="actionProfileSave"/>
+    <addaction name="actionProfileDelete"/>
+    <addaction name="separator"/>
+    <addaction name="actionProfilePreview"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionGitHub"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionOverwriteFiles"/>
+    <addaction name="actionSettings"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuProcess"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionProfileSave"/>
+   <addaction name="actionProfileDelete"/>
+   <addaction name="actionProfilePreview"/>
+   <addaction name="separator"/>
+   <addaction name="actionAddFiles"/>
+   <addaction name="actionAddFolder"/>
+   <addaction name="separator"/>
+   <addaction name="actionStartProcessing"/>
+   <addaction name="actionStopProcessing"/>
+   <addaction name="separator"/>
+   <addaction name="actionRemoveCompleted"/>
+   <addaction name="actionRemoveFailed"/>
+   <addaction name="actionRemoveAll"/>
+  </widget>
+  <action name="actionAddFiles">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/add_files.svg</normaloff>:/res/add_files.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Add Files...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ins</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/res/exit.png</normaloff>:/res/exit.png</iconset>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About...</string>
+   </property>
+  </action>
+  <action name="actionProfileSave">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/profile_save.svg</normaloff>:/res/profile_save.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Save...</string>
+   </property>
+  </action>
+  <action name="actionProfileDelete">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/profile_delete.svg</normaloff>:/res/profile_delete.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Delete...</string>
+   </property>
+  </action>
+  <action name="actionProfilePreview">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/profile_preview.svg</normaloff>:/res/profile_preview.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Preview...</string>
+   </property>
+  </action>
+  <action name="actionAddFolder">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/add_folder.svg</normaloff>:/res/add_folder.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Add Folder...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Ins</string>
+   </property>
+  </action>
+  <action name="actionRemoveFailed">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/remove_failed.svg</normaloff>:/res/remove_failed.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Remove Failed</string>
+   </property>
+  </action>
+  <action name="actionRemoveCompleted">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/remove_completed.svg</normaloff>:/res/remove_completed.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Remove Completed</string>
+   </property>
+  </action>
+  <action name="actionRemoveAll">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/remove_all.svg</normaloff>:/res/remove_all.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Remove All</string>
+   </property>
+  </action>
+  <action name="actionGitHub">
+   <property name="text">
+    <string>GitHub...</string>
+   </property>
+  </action>
+  <action name="actionStartProcessing">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/start.svg</normaloff>:/res/start.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Start Processing</string>
+   </property>
+  </action>
+  <action name="actionStopProcessing">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/stop.svg</normaloff>:/res/stop.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Stop Processing</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/settings.svg</normaloff>:/res/settings.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Settings...</string>
+   </property>
+  </action>
+  <action name="actionOverwriteFiles">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Overwrite Output Files</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
