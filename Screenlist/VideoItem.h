@@ -15,13 +15,13 @@ enum
     PIS_FAILED                 //processed with error
 };
 
-class CProcessingItem
+class CVideoItem
 {
 public:
-    explicit CProcessingItem(const char* vide_file_path);
+    explicit CVideoItem(const char* vide_file_path);
 
     //TODO:
-    //CProcessingItem(int state, LPCTSTR source_file_name, LPCTSTR result_string = _T("")); //for loading from setting file
+    //CVideoItem(int state, LPCTSTR source_file_name, LPCTSTR result_string = _T("")); //for loading from setting file
 
     int State;
     QString VideoFilePath;

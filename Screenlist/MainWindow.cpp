@@ -13,12 +13,61 @@
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
 
+CStrIntModel::CStrIntModel() : QStringListModel(), DefaultRow{0}
+{
+}
+CStrIntModel::~CStrIntModel()
+{
+}
+int CStrIntModel::columnCount(const QModelIndex &parent) const
+{
+    return 1;
+}
+int CStrIntModel::rowCount(const QModelIndex &parent) const
+{
+    return Data.size();
+}
+QVariant CStrIntModel::data(const QModelIndex &index, int role) const
+{
+    if(index.row() >= Data.size())
+        return QVariant();
+    if(Qt::DisplayRole == role)
+        return Data[index.row()].Text;
+    return QVariant();
+}
+
+void CStrIntModel::setDefaultRow(int def_row)
+{
+    Q_ASSERT(def_row < Data.size());
+    DefaultRow = def_row;
+}
+int CStrIntModel::getData(int row) const
+{
+    if(row >= Data.size())
+        return Data[DefaultRow].Data;
+    return Data[row].Data;
+}
+int CStrIntModel::getRow(int data) const
+{
+    int row = 0;
+    for(const auto& item : Data)
+    {
+        if(item.Data == data)
+            return row;
+        ++row;
+    }
+    return DefaultRow;
+}
+void CStrIntModel::addItem(QString text, int data)
+{
+    Data.push_back(CComboBoxItem(text, data));
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     HeaderView(Qt::Horizontal, this),
     ProcessingItemList(this)
-    //SelectionModel(&ProcessingItemList)
 {
     ui->setupUi(this);
 
@@ -29,37 +78,51 @@ MainWindow::MainWindow(QWidget *parent) :
     ProcessingItemList.Add("item 2");
     ProcessingItemList.Add("item 3");
 
-    //TODO: init table view
+    //init header view
     HeaderView.setModel(&ProcessingItemList);
-    //HeaderView.setSectionResizeMode(QHeaderView::Stretch);
+    HeaderView.setSectionResizeMode(QHeaderView::Interactive);
+    HeaderView.setSectionsClickable(true);
+    HeaderView.setSortIndicatorShown(true);
+    HeaderView.setStretchLastSection(true);
 
+    //init table view
     ui->tableView->setHorizontalHeader(&HeaderView);
     ui->tableView->setModel(&ProcessingItemList);
     ui->tableView->verticalHeader()->hide();
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     //TODO: init controls
     UpdateOutputDirs();
 
     //header combo
-    ui->cbHeader->addItem("Disabled", sl::HEADER_DISABLED);
-    ui->cbHeader->addItem("Expanded", sl::HEADER_EXPANDED);
-    ui->cbHeader->addItem("Compact", sl::HEADER_COMPACT);
+    HeaderModel.addItem("Disabled", sl::HEADER_DISABLED);
+    HeaderModel.addItem("Expanded", sl::HEADER_EXPANDED);
+    HeaderModel.addItem("Compact", sl::HEADER_COMPACT);
+    HeaderModel.setDefaultRow(1);
+    ui->cbHeader->setModel(&HeaderModel);
 
     //timestamp combo
-    ui->cbTimestamp->addItem("Disabled", sl::TIMESTAMP_TYPE_DISABLED);
-    ui->cbTimestamp->addItem("Top-Left", sl::TIMESTAMP_TYPE_TOP_LEFT);
-    ui->cbTimestamp->addItem("Top-Center", sl::TIMESTAMP_TYPE_TOP_CENTER);
-    ui->cbTimestamp->addItem("Top-Right", sl::TIMESTAMP_TYPE_TOP_RIGHT);
-    ui->cbTimestamp->addItem("Bottom-Left", sl::TIMESTAMP_TYPE_BOTTOM_LEFT);
-    ui->cbTimestamp->addItem("Bottom-Center", sl::TIMESTAMP_TYPE_BOTTOM_CENTER);
-    ui->cbTimestamp->addItem("Bottom-Right", sl::TIMESTAMP_TYPE_BOTTOM_RIGHT);
+    TimestampModel.addItem("Disabled", sl::TIMESTAMP_TYPE_DISABLED);
+    TimestampModel.addItem("Top-Left", sl::TIMESTAMP_TYPE_TOP_LEFT);
+    TimestampModel.addItem("Top-Center", sl::TIMESTAMP_TYPE_TOP_CENTER);
+    TimestampModel.addItem("Top-Right", sl::TIMESTAMP_TYPE_TOP_RIGHT);
+    TimestampModel.addItem("Bottom-Left", sl::TIMESTAMP_TYPE_BOTTOM_LEFT);
+    TimestampModel.addItem("Bottom-Center", sl::TIMESTAMP_TYPE_BOTTOM_CENTER);
+    TimestampModel.addItem("Bottom-Right", sl::TIMESTAMP_TYPE_BOTTOM_RIGHT);
+    TimestampModel.setDefaultRow(6);
+    ui->cbTimestamp->setModel(&TimestampModel);
 
     //TODO:
     //init current profile
-    ui->cbProfiles->addItem("<default>");
-    //ui->cbHeader->setCurrentIndex(CurrentProfile.HeaderType);
-
+    ui->cbProfiles->setModel(&ProfileModel);
+    ui->cbProfiles->setCurrentIndex(0);
+    PProfile profile = ProfileModel.getProfile(0);
+    ui->cbHeader->setCurrentIndex(HeaderModel.getRow(profile->HeaderType));
+    ui->leImageWidth->setText(QString("%1").arg(profile->ImageWidth));
+    ui->leGridColumns->setText(QString("%1").arg(profile->GridColumns));
+    ui->leGridRows->setText(QString("%1").arg(profile->GridRows));
+    ui->cbTimestamp->setCurrentIndex(TimestampModel.getRow(profile->Timestamp));
 
     //connect actions
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::onAddFiles);

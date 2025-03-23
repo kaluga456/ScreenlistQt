@@ -4,10 +4,10 @@
 #include <QHeaderView>
 #include "VideoItem.h"
 
-typedef std::shared_ptr<CProcessingItem> PProcessingItem;
-typedef std::vector<CProcessingItem*> CProcessingItems;
+typedef std::shared_ptr<CVideoItem> PVideoItem;
+typedef std::vector<CVideoItem*> CVideoItems;
 
-class CProcessingItemList : public QAbstractItemModel
+class CVideoItemModel : public QAbstractItemModel
 {
     Q_OBJECT
 
@@ -23,8 +23,8 @@ public:
     };
 
     //ctor/dtor
-    CProcessingItemList(QObject* parent);
-    ~CProcessingItemList();
+    CVideoItemModel(QObject* parent);
+    ~CVideoItemModel();
 
     //overrides
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -36,13 +36,13 @@ public:
 
     //
     void Add(const char* vide_file_path);
-    CProcessingItem* Get(const QModelIndex &index);
-    const CProcessingItem* Get(const QModelIndex &index) const;
-    CProcessingItem* Get(int row);
-    const CProcessingItem* Get(int row) const;
+    CVideoItem* Get(const QModelIndex &index);
+    const CVideoItem* Get(const QModelIndex &index) const;
+    CVideoItem* Get(int row);
+    const CVideoItem* Get(int row) const;
 
 private:
-    CProcessingItems Items;
+    CVideoItems Items;
 };
 
 #endif // VDEOLISTMODEL_H

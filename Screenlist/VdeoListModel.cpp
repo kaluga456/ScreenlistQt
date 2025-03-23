@@ -1,26 +1,26 @@
 #include "VdeoListModel.h"
 
-CProcessingItemList::CProcessingItemList(QObject* parent) : QAbstractItemModel(parent)
+CVideoItemModel::CVideoItemModel(QObject* parent) : QAbstractItemModel(parent)
 {
 }
-CProcessingItemList::~CProcessingItemList()
+CVideoItemModel::~CVideoItemModel()
 {
     for(auto i : Items)
         delete i;
 }
-int CProcessingItemList::columnCount(const QModelIndex &parent) const
+int CVideoItemModel::columnCount(const QModelIndex &parent) const
 {
     return COLUMNS_COUNT;
 }
-int CProcessingItemList::rowCount(const QModelIndex &parent) const
+int CVideoItemModel::rowCount(const QModelIndex &parent) const
 {
     return Items.size();
 }
-QVariant CProcessingItemList::data(const QModelIndex &index, int role) const
+QVariant CVideoItemModel::data(const QModelIndex &index, int role) const
 {
     if(Qt::DisplayRole == role)
     {
-        const CProcessingItem* pi = Get(index);
+        const CVideoItem* pi = Get(index);
         switch(index.column())
         {
         case COLUMN_VIDEO: return pi->VideoFilePath;
@@ -30,15 +30,15 @@ QVariant CProcessingItemList::data(const QModelIndex &index, int role) const
     }
     return QVariant();
 }
-QModelIndex CProcessingItemList::index(int row, int column, const QModelIndex &parent) const
+QModelIndex CVideoItemModel::index(int row, int column, const QModelIndex &parent) const
 {
     return createIndex(row, column, Get(row));
 }
-QModelIndex CProcessingItemList::parent(const QModelIndex &index) const
+QModelIndex CVideoItemModel::parent(const QModelIndex &index) const
 {
     return QModelIndex();
 }
-QVariant CProcessingItemList::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant CVideoItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if(Qt::Horizontal == orientation && Qt::DisplayRole == role)
     {
@@ -51,7 +51,7 @@ QVariant CProcessingItemList::headerData(int section, Qt::Orientation orientatio
     }
     return QAbstractItemModel::headerData(section, orientation, role);
 }
-void CProcessingItemList::Add(const char *vide_file_path)
+void CVideoItemModel::Add(const char *vide_file_path)
 {
     if(nullptr == vide_file_path)
         return;
@@ -60,30 +60,30 @@ void CProcessingItemList::Add(const char *vide_file_path)
     //ignore duplicates
     // for(auto& i : Items)
     // {
-    //     PProcessingItem pi = i.second;
+    //     PVideoItem pi = i.second;
     //     if(0 == pi->SourceFileName.CompareNoCase(vide_file_path))
     //         return;
     // }
 
-    Items.push_back(new CProcessingItem(vide_file_path));
+    Items.push_back(new CVideoItem(vide_file_path));
 }
-CProcessingItem* CProcessingItemList::Get(int row)
+CVideoItem* CVideoItemModel::Get(int row)
 {
     Q_ASSERT(row < Items.size());
     return (row < Items.size()) ? Items[row] : nullptr;
 }
-const CProcessingItem* CProcessingItemList::Get(int row) const
+const CVideoItem* CVideoItemModel::Get(int row) const
 {
     Q_ASSERT(row < Items.size());
     return (row < Items.size()) ? Items[row] : nullptr;
 }
-CProcessingItem* CProcessingItemList::Get(const QModelIndex &index)
+CVideoItem* CVideoItemModel::Get(const QModelIndex &index)
 {
     const int i = index.row();
     Q_ASSERT(i < Items.size());
     return (i < Items.size()) ? Items[i] : nullptr;
 }
-const CProcessingItem* CProcessingItemList::Get(const QModelIndex &index) const
+const CVideoItem* CVideoItemModel::Get(const QModelIndex &index) const
 {
     const int i = index.row();
     Q_ASSERT(i < Items.size());
