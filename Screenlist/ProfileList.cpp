@@ -1,6 +1,5 @@
 #include "ProfileList.h"
 
-
 CProfileModel::CProfileModel()
 {
     //TEST:
@@ -9,16 +8,13 @@ CProfileModel::CProfileModel()
     def->Timestamp = sl::TIMESTAMP_TYPE_BOTTOM_RIGHT;
     Profiles.push_back(def);
 }
-
 CProfileModel::~CProfileModel()
 {   
 }
-
 int CProfileModel::columnCount(const QModelIndex &parent) const
 {
     return 1;
 }
-
 int CProfileModel::rowCount(const QModelIndex &parent) const
 {
     return Profiles.size();
@@ -29,7 +25,6 @@ QVariant CProfileModel::data(const QModelIndex &index, int role) const
         return Profiles[index.row()]->Name;
     return QVariant();
 }
-
 void CProfileModel::setProfile(int row, PProfile profile)
 {
     //TODO:

@@ -5,12 +5,13 @@
 #include <QHeaderView>
 #include <QSplitter>
 #include <QMainWindow>
+#include <QPushButton>
 
 #include "sl_interface.h"
 #include "VideoItem.h"
 #include "ProfileList.h"
 #include "VdeoListModel.h"
-
+#include "ProcessingThread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -83,14 +84,24 @@ private:
 
     QHeaderView HeaderView;
     CVideoItemModel ProcessingItemList;
+    CProcessingThread ProcessingThread;
+
+    void ShowErrorBox(QString error_text);
 
     //combo boxes
     CStrIntModel HeaderModel;
     CStrIntModel TimestampModel;
 
     //profiles
-    PProfile CurrentProfile;
+    QFont HeaderFont;
+    QFont TimestampFont;
     CProfileModel ProfileModel;
+    PProfile GetCurrentProfile();
+    void UpdateProfileView();
+    void SetFontButton(QPushButton* button, const QFont &font);
+
+    //video items
+    PVideoItem GetVideoToProcess();
 
     //event overrides
     void closeEvent(QCloseEvent *event) override;

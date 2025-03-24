@@ -9,7 +9,7 @@ namespace sl
 {
 
 //sample values for profile preview
-constexpr const char* SAMPLE_FRAME_RES_NAME = ":/res/sample_frame.bmp";
+constexpr const char* SAMPLE_FRAME_RES_NAME = ":/res/sample_frame.jpg";
 constexpr const char* SAMPLE_FRAME_NAME = "sample_frame.bmp";
 constexpr int SAMPLE_FRAME_SIZE = 230456;
 constexpr int SAMPLE_FRAME_DURATION = 0;

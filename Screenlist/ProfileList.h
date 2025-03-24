@@ -4,7 +4,6 @@
 #include <QStringListModel>
 #include "sl_profile.h"
 
-
 class CProfile : public sl::CProfile
 {
 public:

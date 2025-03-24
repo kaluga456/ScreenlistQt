@@ -20,12 +20,10 @@ class CVideoItem
 public:
     explicit CVideoItem(const char* vide_file_path);
 
-    //TODO:
-    //CVideoItem(int state, LPCTSTR source_file_name, LPCTSTR result_string = _T("")); //for loading from setting file
-
     int State;
     QString VideoFilePath;
     QString ResultString;
 };
+typedef std::shared_ptr<CVideoItem> PVideoItem;
 
 #endif // VIDEOITEM_H

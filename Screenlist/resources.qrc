@@ -1,6 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>res/sample_frame.bmp</file>
         <file>res/add_files.svg</file>
         <file>res/add_folder.svg</file>
         <file>res/profile_delete.svg</file>
@@ -12,5 +11,6 @@
         <file>res/settings.svg</file>
         <file>res/start.svg</file>
         <file>res/stop.svg</file>
+        <file>res/sample_frame.jpg</file>
     </qresource>
 </RCC>

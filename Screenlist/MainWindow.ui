@@ -143,8 +143,14 @@
            </item>
            <item row="5" column="1">
             <widget class="QPushButton" name="pbHeaderFont">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>29</height>
+              </size>
+             </property>
              <property name="text">
-              <string>...</string>
+              <string>Times, 10</string>
              </property>
             </widget>
            </item>
@@ -182,8 +188,14 @@
            </item>
            <item row="13" column="1">
             <widget class="QPushButton" name="pbTimestampFont">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>29</height>
+              </size>
+             </property>
              <property name="text">
-              <string>...</string>
+              <string>Times, 10</string>
              </property>
             </widget>
            </item>

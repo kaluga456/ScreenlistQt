@@ -1,3 +1,5 @@
+#include <QDebug>
+#include <QStandardPaths>
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
 #include <QHeaderView>
@@ -8,8 +10,8 @@
 #include <QDesktopServices>
 
 #include "about.h"
+#include "sl_options.h"
 #include "Settings.h"
-#include "ProcessingThread.h"
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
 
@@ -117,12 +119,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //init current profile
     ui->cbProfiles->setModel(&ProfileModel);
     ui->cbProfiles->setCurrentIndex(0);
-    PProfile profile = ProfileModel.getProfile(0);
-    ui->cbHeader->setCurrentIndex(HeaderModel.getRow(profile->HeaderType));
-    ui->leImageWidth->setText(QString("%1").arg(profile->ImageWidth));
-    ui->leGridColumns->setText(QString("%1").arg(profile->GridColumns));
-    ui->leGridRows->setText(QString("%1").arg(profile->GridRows));
-    ui->cbTimestamp->setCurrentIndex(TimestampModel.getRow(profile->Timestamp));
+    UpdateProfileView();
 
     //connect actions
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::onAddFiles);
@@ -182,6 +179,10 @@ void MainWindow::onRemoveAll()
 void MainWindow::onStartProcessing()
 {
     //TODO:
+    PVideoItem video_item = GetVideoToProcess();
+    PProfile profile = GetCurrentProfile();
+
+
 }
 void MainWindow::onStopProcessing()
 {
@@ -218,9 +219,19 @@ void MainWindow::onProfileDelete()
 }
 void MainWindow::onProfilePreview()
 {
-    //TODO:
-    //sl::generate(nullptr, CurrentProfile,);
-    QDesktopServices::openUrl(QUrl("file:///D:/video/trash/data.mp4", QUrl::TolerantMode));
+    ShowErrorBox("Can`t make preview image\n");
+    const CProfile* profile = GetCurrentProfile().get();
+    sl::COptions options;
+    options.OverwriteFiles = true;
+    options.OutputPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    QString result_string;
+    if(sl::RESULT_SUCCESS != sl::generate(nullptr, *profile, options, result_string))
+    {
+        ShowErrorBox("Can`t make preview image\n" + result_string);
+        return;
+    }
+    QString file_path = options.OutputPath + "//" + sl::PREVIEW_FILE_NAME;
+    QDesktopServices::openUrl(QUrl(file_path, QUrl::TolerantMode));
 }
 void MainWindow::onSettings()
 {
@@ -241,25 +252,19 @@ void MainWindow::onAbout()
 }
 void MainWindow::onHeaderFont()
 {
-    bool ok;
-    QFont font = QFontDialog::getFont(&ok, QFont("Times", 10), this);
+    bool ok = false;
+    QFont font = QFontDialog::getFont(&ok, HeaderFont, this);
     if(false == ok)
         return;
-
-    QString font_text = font.family();
-    font_text += QString(", %1").arg(font.pointSize());
-    ui->pbHeaderFont->setText(font_text);
+    SetFontButton(ui->pbHeaderFont, font);
 }
 void MainWindow::onTimestampFont()
 {
-    bool ok;
-    QFont font = QFontDialog::getFont(&ok, QFont("Times", 10), this);
+    bool ok = false;
+    QFont font = QFontDialog::getFont(&ok, TimestampFont, this);
     if(false == ok)
         return;
-
-    QString font_text = font.family();
-    font_text += QString(", %1").arg(font.pointSize());
-    ui->pbTimestampFont->setText(font_text);
+    SetFontButton(ui->pbTimestampFont, font);
 }
 void MainWindow::onOutputPath()
 {
@@ -273,6 +278,56 @@ void MainWindow::onOutputPath()
         return;
 
     UpdateOutputDirs(item_index);
+}
+void MainWindow::ShowErrorBox(QString error_text)
+{
+    QMessageBox mb;
+    mb.setIcon(QMessageBox::Warning);
+    mb.setWindowTitle(APP_NAME);
+    mb.setText(error_text);
+    mb.setStandardButtons(QMessageBox::Ok);
+    mb.setDefaultButton(QMessageBox::Ok);
+    mb.exec();
+}
+PProfile MainWindow::GetCurrentProfile()
+{
+    //TODO:
+    PProfile profile = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
+    Q_ASSERT(profile.get());
+    return profile;
+}
+void MainWindow::UpdateProfileView()
+{
+    PProfile profile = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
+    Q_ASSERT(profile.get());
+    ui->cbHeader->setCurrentIndex(HeaderModel.getRow(profile->HeaderType));
+    ui->leImageWidth->setText(QString("%1").arg(profile->ImageWidth));
+    ui->leGridColumns->setText(QString("%1").arg(profile->GridColumns));
+    ui->leGridRows->setText(QString("%1").arg(profile->GridRows));
+    ui->cbTimestamp->setCurrentIndex(TimestampModel.getRow(profile->Timestamp));
+
+    SetFontButton(ui->pbHeaderFont, profile->HeaderFont);
+    SetFontButton(ui->pbTimestampFont, profile->TimestampFont);
+}
+void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
+{
+    QFont pb_font = font;
+    pb_font.setPointSize(8);
+    QString pb_text = QString("%1, ").arg(font.family());
+    pb_text += QString("%1").arg(font.pointSize());
+    button->setFont(pb_font);
+    button->setText(pb_text);
+
+    if(button == ui->pbHeaderFont)
+        HeaderFont = font;
+    else if(button == ui->pbTimestampFont)
+        TimestampFont = font;
+}
+PVideoItem MainWindow::GetVideoToProcess()
+{
+    //TODO:
+    PVideoItem video(new CVideoItem("D:/video/trash/data.mp4"));
+    return video;
 }
 void MainWindow::UpdateOutputDirs(int item_index /*= 0*/)
 {

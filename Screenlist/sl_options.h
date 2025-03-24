@@ -14,6 +14,8 @@ enum : int
     RESULT_TERMINATED   //result string not used
 };
 
+constexpr const char* PREVIEW_FILE_NAME = "sl_profile_preview.jpg";
+
 //callback target interface
 class IEventCallback
 {

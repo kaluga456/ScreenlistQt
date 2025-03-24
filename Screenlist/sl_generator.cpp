@@ -93,15 +93,19 @@ static Qt::AlignmentFlag GetTimastampAlignment(int Timestamp)
 
 QString GetOutputFilePath(const char *video_file_path, const COptions& options)
 {
+    QString output_path = options.OutputPath;
+    if(output_path.back() != '\\' && output_path.back() != '/')
+        output_path.push_back('/');
+
     if(nullptr == video_file_path)
-        return "profile_preview.jpg";
+        return output_path + PREVIEW_FILE_NAME;
 
     if(options.OutputPath.isEmpty())
         return QString(video_file_path) + ".jpg";
 
     QDir in_path(video_file_path);
     QString file_name{in_path.dirName() + ".jpg"};
-    return options.OutputPath + "\\" + file_name;
+    return output_path + file_name;
 }
 
 CScreenlist::CScreenlist() : Pixmap{nullptr}, Painter{nullptr}

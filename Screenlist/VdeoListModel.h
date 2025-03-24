@@ -4,7 +4,6 @@
 #include <QHeaderView>
 #include "VideoItem.h"
 
-typedef std::shared_ptr<CVideoItem> PVideoItem;
 typedef std::vector<CVideoItem*> CVideoItems;
 
 class CVideoItemModel : public QAbstractItemModel

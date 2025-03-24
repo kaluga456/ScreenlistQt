@@ -3,6 +3,9 @@
 
 #include <QObject>
 #include <QThread>
+#include "sl_options.h"
+#include "ProfileList.h"
+#include "VideoItem.h"
 
 class CProcessingThread : public QThread
 {
@@ -11,12 +14,15 @@ class CProcessingThread : public QThread
 public:
     explicit CProcessingThread(QObject *parent = nullptr);
 
+    void Start(PVideoItem video, PProfile profile, const sl::COptions& options);
+    void Stop();
+
 protected:
     void run() override;
 
 signals:
-    void threadNotify(const QString& result_string);
-    void threadFinished(const QString& result_string);
+    void threadNotify(int progress);
+    void threadFinished(int result, const QString& result_string);
 
 };
 
