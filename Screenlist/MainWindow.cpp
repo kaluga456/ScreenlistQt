@@ -69,19 +69,19 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     HeaderView(Qt::Horizontal, this),
-    ProcessingItemList(this)
+    VideoItemList(this)
 {
     ui->setupUi(this);
 
     Settings.Load(this);
 
     //TEST:
-    ProcessingItemList.Add("item 1");
-    ProcessingItemList.Add("item 2");
-    ProcessingItemList.Add("item 3");
+    VideoItemList.Add("item 1");
+    VideoItemList.Add("item 2");
+    VideoItemList.Add("item 3");
 
     //init header view
-    HeaderView.setModel(&ProcessingItemList);
+    HeaderView.setModel(&VideoItemList);
     HeaderView.setSectionResizeMode(QHeaderView::Interactive);
     HeaderView.setSectionsClickable(true);
     HeaderView.setSortIndicatorShown(true);
@@ -89,7 +89,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //init table view
     ui->tableView->setHorizontalHeader(&HeaderView);
-    ui->tableView->setModel(&ProcessingItemList);
+    ui->tableView->setModel(&VideoItemList);
     ui->tableView->verticalHeader()->hide();
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
@@ -117,6 +117,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //TODO:
     //init current profile
+    ProfileModel.Load();
     ui->cbProfiles->setModel(&ProfileModel);
     ui->cbProfiles->setCurrentIndex(0);
     UpdateProfileView();
@@ -141,6 +142,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pbHeaderFont, &QPushButton::clicked, this, &MainWindow::onHeaderFont);
     connect(ui->pbTimestampFont, &QPushButton::clicked, this, &MainWindow::onTimestampFont);
     connect(ui->pbOutputPath, &QPushButton::clicked, this, &MainWindow::onOutputPath);
+
+    //connect processing thread events
+    connect(&GeneratorThread, &CGeneratorThread::threadNotify, this, &MainWindow::threadNotify);
+    connect(&GeneratorThread, &CGeneratorThread::threadFinished, this, &MainWindow::threadFinished);
+
+    setWindowTitle(APP_FULL_NAME);
 }
 MainWindow::~MainWindow()
 {
@@ -181,25 +188,18 @@ void MainWindow::onStartProcessing()
     //TODO:
     PVideoItem video_item = GetVideoToProcess();
     PProfile profile = GetCurrentProfile();
-
-
+    sl::COptions options;
+    GeneratorThread.Start(video_item, profile, options);
 }
 void MainWindow::onStopProcessing()
 {
-    //TODO:
+    GeneratorThread.Stop();
 }
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    //TODO:
-    // QMessageBox mb;
-    // mb.setIcon(QMessageBox::Warning);
-    // mb.setWindowTitle(APP_NAME);
-    // mb.setText("Exit application?");
-    // mb.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-    // mb.setDefaultButton(QMessageBox::Ok);
-    // const bool result = QMessageBox::Ok == mb.exec();
-
     Settings.Save(this);
+    ProfileModel.Save();
+
     if(event)
         QWidget::closeEvent(event);
     else
@@ -216,10 +216,21 @@ void MainWindow::onProfileSave()
 void MainWindow::onProfileDelete()
 {
     //TODO:
+    QString profile_name = "<profile_to_delete>";
+
+    QMessageBox mb;
+    mb.setIcon(QMessageBox::Warning);
+    mb.setWindowTitle(APP_NAME);
+    mb.setText("Delete profile " + profile_name + " ?");
+    mb.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    mb.setDefaultButton(QMessageBox::Ok);
+    if(QMessageBox::Ok != mb.exec())
+        return;
+
+    //TODO:
 }
 void MainWindow::onProfilePreview()
 {
-    ShowErrorBox("Can`t make preview image\n");
     const CProfile* profile = GetCurrentProfile().get();
     sl::COptions options;
     options.OverwriteFiles = true;
@@ -278,6 +289,16 @@ void MainWindow::onOutputPath()
         return;
 
     UpdateOutputDirs(item_index);
+}
+void MainWindow::threadNotify(int progress)
+{
+    //TODO:
+    qDebug() << "threadNotify: " << progress;
+}
+void MainWindow::threadFinished(int result, const QString &result_string)
+{
+    //TODO:
+    qDebug() << "threadFinished: " << result_string;
 }
 void MainWindow::ShowErrorBox(QString error_text)
 {

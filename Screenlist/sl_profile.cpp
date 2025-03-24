@@ -2,8 +2,8 @@
 
 using namespace sl;
 
-constexpr const int DEFAULT_PROFILE_FONT_SIZE = 16;
-constexpr const char* DEFAULT_PROFILE_FONT_NAME = "Lucida Console";
+constexpr const int DEFAULT_PROFILE_FONT_SIZE = 10;
+constexpr const char* DEFAULT_PROFILE_FONT_NAME = "Times";
 
 //default profile
 CProfile::CProfile() :

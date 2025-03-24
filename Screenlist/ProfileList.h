@@ -15,6 +15,7 @@ using PProfile = std::shared_ptr<CProfile>;
 //TODO: default profile
 class CProfileModel : public QStringListModel
 {
+    friend class CResetModel;
 public:
     CProfileModel();
     ~CProfileModel();
@@ -29,8 +30,23 @@ public:
     void deleteProfile(int row);
     PProfile getProfile(int row) const;
 
+    //serialization
+    void Load();
+    void Save();
+
 private:
+    void beginReset() {beginResetModel();}
+    void endReset() {endResetModel();}
     std::vector<PProfile> Profiles;
+};
+
+class CResetModel
+{
+public:
+    CResetModel(CProfileModel* model) : Model(model) {Model->beginResetModel();}
+    ~CResetModel() {Model->endResetModel();}
+private:
+    CProfileModel* Model;
 };
 
 #endif // PROFILELIST_H

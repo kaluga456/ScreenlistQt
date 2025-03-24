@@ -27,7 +27,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         sl_error.cpp sl_error.h sl_generator.cpp sl_generator.h sl_interface.cpp sl_interface.h sl_options.cpp sl_options.h sl_profile.cpp sl_profile.h sl_video_file.cpp sl_video_file.h
-        ProcessingThread.cpp ProcessingThread.h resources.qrc
+        GeneratorThread.cpp GeneratorThread.h resources.qrc
         about.h
         Settings.h Settings.cpp
         ProfileList.h ProfileList.cpp

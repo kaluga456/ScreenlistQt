@@ -10,7 +10,7 @@ constexpr int HEADER_TEXT_PAD = 4;
 constexpr int HEADER_LINES_COUNT = 4;
 constexpr const char* HEADER_FORMAT_STRING = "File Name: {:s}\nFile Size: {:s}\nResolution: {:d}x{:d}\nDuration: {:s}";
 
-//TODO:
+//TODO: sanity check
 constexpr int MIN_FRAME_SIZE = 100;
 constexpr int MAX_FRAME_SIZE = 4096;
 constexpr int MIN_PROFILE_GRID = 1;
@@ -108,13 +108,13 @@ QString GetOutputFilePath(const char *video_file_path, const COptions& options)
     return output_path + file_name;
 }
 
-CScreenlist::CScreenlist() : Pixmap{nullptr}, Painter{nullptr}
+CScreenlist::CScreenlist()// : Pixmap{nullptr}, Painter{nullptr}
 {
 }
 CScreenlist::~CScreenlist()
 {
-    delete Painter;
-    delete Pixmap;
+    // delete Painter;
+    // delete Pixmap;
 }
 int CScreenlist::Generate(const char *video_file_path,
                           const CProfile &profile,
@@ -133,8 +133,7 @@ int CScreenlist::Generate(const char *video_file_path,
     Q_ASSERT(false == output_file_path.isEmpty());
 
     //check output file
-    //always overwrite profile preview files
-    if(video_file_path && false == options.OverwriteFiles)
+    if(false == options.OverwriteFiles)
     {
         QDir dir;
         if(dir.exists(output_file_path))
@@ -174,8 +173,8 @@ int CScreenlist::Generate(const char *video_file_path,
     const int output_height = header_height + out_frame_height * profile.GridRows;
 
     //TODO:
-    Pixmap = new QPixmap{profile.ImageWidth, output_height};
-    Painter = new QPainter{Pixmap};
+    std::unique_ptr<QPixmap> Pixmap(new QPixmap{profile.ImageWidth, output_height});
+    std::unique_ptr<QPainter> Painter(new QPainter{Pixmap.get()});
 
     //draw background
     QBrush bg_brush{profile.BgColor};
@@ -215,7 +214,7 @@ int CScreenlist::Generate(const char *video_file_path,
             if(event_callback && event_callback->IsTerminate())
                 return RESULT_TERMINATED;
 
-            //frame image
+            //draw frame image
             const int frame_left = x * out_frame_width;
             const int frame_top = header_height + y * out_frame_height;
 
@@ -224,7 +223,7 @@ int CScreenlist::Generate(const char *video_file_path,
             const QRect frame_rect{frame_left, frame_top, out_frame_width, out_frame_height};
             Painter->drawImage(frame_rect, frame);
 
-            //TODO: Timestamp
+            //draw imestamp
             if(TIMESTAMP_TYPE_DISABLED != profile.Timestamp)
             {
                 std::string timestamp_text = GetDurationString(current_position);
@@ -235,11 +234,7 @@ int CScreenlist::Generate(const char *video_file_path,
 
                 //draw shadow
                 constexpr int TIMESTAMP_SHADOW_SHIFT = 2;
-
-                //TODO:
-                //const int shadow_color = ~(profile.TimestampFontColor.value());
                 const QColor shadow_color{0,0,0};
-
                 Painter->setPen(QPen{QColor(shadow_color)});
                 Painter->drawText(QRect{frame_rect.left() + TIMESTAMP_SHADOW_SHIFT,
                                         frame_rect.top() + TIMESTAMP_SHADOW_SHIFT,

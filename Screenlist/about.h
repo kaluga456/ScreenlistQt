@@ -10,6 +10,6 @@
 #define APP_BUILD_DATE __DATE__
 #define APP_FULL_NAME APP_NAME " - " APP_BUILD_TYPE " build " APP_BUILD_DATE
 #define APP_COMPANY "kaluga456"
-#define APP_URL "https://github.com/kaluga456/Screenlist"
+#define APP_URL "https://github.com/kaluga456/ScreenlistQt"
 
 #endif // ABOUT_H

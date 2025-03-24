@@ -22,8 +22,8 @@ public:
                  IEventCallback* event_callback = nullptr);
 
 private:
-    QPixmap* Pixmap{nullptr};
-    QPainter* Painter{nullptr};
+    // QPixmap* Pixmap{nullptr};
+    // QPainter* Painter{nullptr};
 };
 
 }

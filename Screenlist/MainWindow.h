@@ -11,7 +11,7 @@
 #include "VideoItem.h"
 #include "ProfileList.h"
 #include "VdeoListModel.h"
-#include "ProcessingThread.h"
+#include "GeneratorThread.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -79,12 +79,16 @@ private slots:
     void onTimestampFont();
     void onOutputPath();
 
+    //processing thread events
+    void threadNotify(int progress);
+    void threadFinished(int result, const QString& result_string);
+
 private:
     Ui::MainWindow *ui;
 
     QHeaderView HeaderView;
-    CVideoItemModel ProcessingItemList;
-    CProcessingThread ProcessingThread;
+    CVideoItemModel VideoItemList;
+    CGeneratorThread GeneratorThread;
 
     void ShowErrorBox(QString error_text);
 

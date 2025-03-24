@@ -29,7 +29,7 @@ class COptions
 public:
     COptions();
 
-    QString OutputPath; //if empty write screenlist to video file directory
+    QString OutputPath;  //if empty write screenlist to video file directory
     bool OverwriteFiles;
 };
 
