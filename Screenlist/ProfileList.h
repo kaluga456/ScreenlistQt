@@ -3,7 +3,37 @@
 
 #include <QStringListModel>
 #include "sl_profile.h"
+//////////////////////////////////////////////////////////////////////////////
+//data model for combo boxes
+class CStrIntModel : public QStringListModel
+{
+public:
+    CStrIntModel();
+    ~CStrIntModel();
 
+    //overrides
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+
+    void setDefaultRow(int def_row);
+    void addItem(QString text, int data);
+
+    int getRow(int data) const;
+    int getData(int row) const;
+
+private:
+    int DefaultRow;
+    class CComboBoxItem
+    {
+    public:
+        CComboBoxItem(QString text, int data) : Text{text}, Data{data} {}
+        QString Text;
+        int Data;
+    };
+    std::vector<CComboBoxItem> Data;
+};
+//////////////////////////////////////////////////////////////////////////////
 class CProfile : public sl::CProfile
 {
 public:
@@ -13,7 +43,7 @@ public:
     bool Compare(const CProfile& rop) const;
 };
 using PProfile = std::shared_ptr<CProfile>;
-
+//////////////////////////////////////////////////////////////////////////////
 //profiles
 //TODO: default profile
 class CProfileModel : public QStringListModel

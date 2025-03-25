@@ -35,7 +35,8 @@ public:
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
     //
-    void Add(const char* vide_file_path);
+    void Add(QString vide_file_path);
+    void Add(const QStringList& file_names);
 
     //access
     PVideoItem Get(const QModelIndex &index);

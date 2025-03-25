@@ -1,15 +1,15 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <QHeaderView>
 #include <QMainWindow>
-#include "ProfileList.h"
 
 //video file types
 constexpr const char* FILE_DIALOG_FILTER = "Video Files (*.avi *.mkv *.mp4 *.m4v *.mp4v *.mpv4 *.hdmov *.mov *.3gp *.3gpp *.3g2 *.3gp2 *.flv *.f4v"
                                            " ogm *.ogv *.rm *.ram *.rpm *.rmm *.rt *.rp *.smi *.smil *.wmvwmp *.wm *.asf"
                                            " smk *.bik *.fli *.flc *.flic *.dsm *.dsv *.dsa *.dss *.ivf *.divx *.rmvb *.amv)"
                                            ";;All Files (*.*)";
-
+//////////////////////////////////////////////////////////////////////////////
 class COutputDirList
 {
 public:
@@ -28,25 +28,22 @@ public:
 private:
     QStringList Dirs;
 };
-
+//////////////////////////////////////////////////////////////////////////////
 class CSettings
 {
 public:
     CSettings();
 
-    void Load(QMainWindow* main_window);
-    void Save(QMainWindow* main_window);
-
     bool OverwriteFiles{true};
 
-    //TODO: profiles
+    //profiles
     QString ProfileName;
-    // void SaveProfiles(const CProfileModel& profiles);
-    // void LoadProfiles(CProfileModel& profiles);
 
     //output dirs
     COutputDirList OutputDirs;
     int LastOutputDir{0};
+
+    QStringList VideoFilters;
 };
 
 extern CSettings Settings;

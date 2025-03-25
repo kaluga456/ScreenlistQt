@@ -21,7 +21,7 @@ QString GetStateString(int item_state)
     return "Unknown";
 }
 
-CVideoItem::CVideoItem(const char* vide_file_path) :
+CVideoItem::CVideoItem(QString vide_file_path) :
     VideoFilePath(vide_file_path),
     State(PIS_WAIT)
 {

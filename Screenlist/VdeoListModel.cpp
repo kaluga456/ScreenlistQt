@@ -72,21 +72,25 @@ void CVideoItemModel::sort(int column, Qt::SortOrder order)
         endResetModel();
     }
 }
-void CVideoItemModel::Add(const char *vide_file_path)
+void CVideoItemModel::Add(QString vide_file_path)
 {
     if(nullptr == vide_file_path)
         return;
 
-    //TODO:
     //ignore duplicates
-    // for(auto& i : Items)
-    // {
-    //     PVideoItem pi = i.second;
-    //     if(0 == pi->SourceFileName.CompareNoCase(vide_file_path))
-    //         return;
-    // }
-
+    for(const auto& video_item : Items)
+    {
+        if(0 == video_item->VideoFilePath.compare(vide_file_path))
+            return;
+    }
     Items.push_back(PVideoItem(new CVideoItem(vide_file_path)));
+}
+void CVideoItemModel::Add(const QStringList &file_names)
+{
+    beginResetModel();
+    for(const auto& file_name : file_names)
+        Add(file_name);
+    endResetModel();
 }
 PVideoItem CVideoItemModel::Get(int row)
 {
@@ -117,7 +121,6 @@ int CVideoItemModel::GetRow(CVideoItem *video_item) const
     }
     return row;
 }
-
 void CVideoItemModel::Update(CVideoItem *video_item, bool full /*= true*/)
 {
     const int row = GetRow(video_item);
@@ -138,12 +141,14 @@ void CVideoItemModel::Update(CVideoItem *video_item, bool full /*= true*/)
 PVideoItem CVideoItemModel::Get(const QModelIndex &index)
 {
     const int i = index.row();
-    Q_ASSERT(i < Items.size());
-    return (i < Items.size()) ? Items[i] : nullptr;
+    if(i < 0 || Items.size() <= i)
+        return nullptr;
+    return Items[i];
 }
 const PVideoItem CVideoItemModel::Get(const QModelIndex &index) const
 {
     const int i = index.row();
-    Q_ASSERT(i < Items.size());
-    return (i < Items.size()) ? Items[i] : nullptr;
+    if(i < 0 || Items.size() <= i)
+        return nullptr;
+    return Items[i];
 }

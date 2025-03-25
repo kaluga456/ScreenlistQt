@@ -19,36 +19,6 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
-//data model for combo boxes
-class CStrIntModel : public QStringListModel
-{
-public:
-    CStrIntModel();
-    ~CStrIntModel();
-
-    //overrides
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-
-    void setDefaultRow(int def_row);
-    void addItem(QString text, int data);
-
-    int getRow(int data) const;
-    int getData(int row) const;
-
-private:
-    int DefaultRow;
-    class CComboBoxItem
-    {
-    public:
-        CComboBoxItem(QString text, int data) : Text{text}, Data{data} {}
-        QString Text;
-        int Data;
-    };
-    std::vector<CComboBoxItem> Data;
-};
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -61,8 +31,9 @@ private slots:
     //actions
     void onAddFiles();
     void onAddFolder();
+    void onRemoveSelected();
     void onRemoveFailed();
-    void onRemoveCpmpleted();
+    void onRemoveCompleted();
     void onRemoveAll();
     void onStartProcessing();
     void onStopProcessing();
@@ -84,6 +55,8 @@ private slots:
 
     //video list
     void sectionClicked(int logicalIndex);
+    void doubleClickedVideoList(const QModelIndex &index);
+    void contextMenuVideoList(const QPoint &pos);
 
     //processing thread events
     void threadNotify(int progress);
@@ -91,13 +64,25 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    //settings
+    void SaveSettings();
+    void LoadSettings();
+
+    //processing thread
+    enum : int
+    {//items to process
+        PROCESS_NONE,
+        PROCESS_ALL,
+        PROCESS_SELECTED
+    } ProcessingState{PROCESS_NONE};
     CGeneratorThread GeneratorThread;
+    PVideoItem GetVideoToProcess();
 
     //video items list
     PVideoItem CurrentVideo;
     QHeaderView HeaderView;
     CVideoItemModel VideoItemList;
-
 
     //combo boxes
     CStrIntModel HeaderModel;
@@ -116,10 +101,7 @@ private:
     bool QueryYesNo(QString prompt);
     void QuerySaveProfile();
 
-    //video items
-    PVideoItem GetVideoToProcess();
-
-    //event overrides
+    //overrides
     void closeEvent(QCloseEvent *event) override;
 
     //controls

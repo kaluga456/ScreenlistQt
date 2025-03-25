@@ -8,7 +8,58 @@ constexpr const char* PROFILES_FILE_NAME = "/profiles.dat";
 constexpr quint32 PROFILES_FILE_HEADER = 0xF103A86C;
 constexpr quint32 PROFILES_FILE_VERSION = 1;
 constexpr quint32 MAX_PROFILES = 50;
-
+//////////////////////////////////////////////////////////////////////////////
+//CStrIntModel
+CStrIntModel::CStrIntModel() : QStringListModel(), DefaultRow{0}
+{
+}
+CStrIntModel::~CStrIntModel()
+{
+}
+int CStrIntModel::columnCount(const QModelIndex &parent) const
+{
+    return 1;
+}
+int CStrIntModel::rowCount(const QModelIndex &parent) const
+{
+    return Data.size();
+}
+QVariant CStrIntModel::data(const QModelIndex &index, int role) const
+{
+    if(index.row() >= Data.size())
+        return QVariant();
+    if(Qt::DisplayRole == role)
+        return Data[index.row()].Text;
+    return QVariant();
+}
+void CStrIntModel::setDefaultRow(int def_row)
+{
+    Q_ASSERT(def_row < Data.size());
+    DefaultRow = def_row;
+}
+int CStrIntModel::getData(int row) const
+{
+    if(row >= Data.size())
+        return Data[DefaultRow].Data;
+    return Data[row].Data;
+}
+int CStrIntModel::getRow(int data) const
+{
+    int row = 0;
+    for(const auto& item : Data)
+    {
+        if(item.Data == data)
+            return row;
+        ++row;
+    }
+    return DefaultRow;
+}
+void CStrIntModel::addItem(QString text, int data)
+{
+    Data.push_back(CComboBoxItem(text, data));
+}
+//////////////////////////////////////////////////////////////////////////////
+//CProfileModel
 CProfileModel::CProfileModel() : CurrentRow{-1}
 {
 }

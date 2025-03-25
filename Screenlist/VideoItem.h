@@ -20,7 +20,7 @@ QString GetStateString(int item_state);
 class CVideoItem
 {
 public:
-    explicit CVideoItem(const char* vide_file_path);
+    explicit CVideoItem(QString vide_file_path);
 
     int State;
     QString VideoFilePath;

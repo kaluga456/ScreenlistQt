@@ -28,20 +28,20 @@
       </property>
       <widget class="QFrame" name="frLeft">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>300</width>
+         <width>260</width>
          <height>0</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>300</width>
+         <width>16777215</width>
          <height>16777215</height>
         </size>
        </property>
@@ -511,6 +511,18 @@
    </property>
    <property name="text">
     <string>Overwrite Output Files</string>
+   </property>
+  </action>
+  <action name="actionProcessAll">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/res/start.svg</normaloff>:/res/start.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Process All</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
  </widget>

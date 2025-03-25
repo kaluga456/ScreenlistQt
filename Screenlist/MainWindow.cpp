@@ -9,62 +9,15 @@
 #include <QThread>
 #include <QMessageBox>
 #include <QDesktopServices>
+#include <QContextMenuEvent>
+#include <QSettings>
+#include <QDirIterator>
 
 #include "about.h"
 #include "sl_options.h"
 #include "Settings.h"
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
-
-CStrIntModel::CStrIntModel() : QStringListModel(), DefaultRow{0}
-{
-}
-CStrIntModel::~CStrIntModel()
-{
-}
-int CStrIntModel::columnCount(const QModelIndex &parent) const
-{
-    return 1;
-}
-int CStrIntModel::rowCount(const QModelIndex &parent) const
-{
-    return Data.size();
-}
-QVariant CStrIntModel::data(const QModelIndex &index, int role) const
-{
-    if(index.row() >= Data.size())
-        return QVariant();
-    if(Qt::DisplayRole == role)
-        return Data[index.row()].Text;
-    return QVariant();
-}
-
-void CStrIntModel::setDefaultRow(int def_row)
-{
-    Q_ASSERT(def_row < Data.size());
-    DefaultRow = def_row;
-}
-int CStrIntModel::getData(int row) const
-{
-    if(row >= Data.size())
-        return Data[DefaultRow].Data;
-    return Data[row].Data;
-}
-int CStrIntModel::getRow(int data) const
-{
-    int row = 0;
-    for(const auto& item : Data)
-    {
-        if(item.Data == data)
-            return row;
-        ++row;
-    }
-    return DefaultRow;
-}
-void CStrIntModel::addItem(QString text, int data)
-{
-    Data.push_back(CComboBoxItem(text, data));
-}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -74,8 +27,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    Settings.Load(this);
-
     //TEST:
     VideoItemList.Add("D:/video/trash/data.mp4");
     VideoItemList.Add("item 1");
@@ -83,18 +34,27 @@ MainWindow::MainWindow(QWidget *parent) :
     VideoItemList.Add("item 3");
 
     //init header view
+    const QFont table_view_font = ui->tableView->font();
     HeaderView.setModel(&VideoItemList);
+    HeaderView.setSectionsMovable(false);
     HeaderView.setSectionResizeMode(QHeaderView::Interactive);
     HeaderView.setSectionsClickable(true);
     HeaderView.setSortIndicatorShown(true);
     HeaderView.setStretchLastSection(true);
+    LoadSettings();
 
     //init table view
     ui->tableView->setHorizontalHeader(&HeaderView);
     ui->tableView->setModel(&VideoItemList);
+    ui->tableView->setShowGrid(false);
     ui->tableView->verticalHeader()->hide();
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    ui->tableView->verticalHeader()->setDefaultSectionSize(table_view_font.pointSize());
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+    //TODO:
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     //TODO: init controls
     UpdateOutputDirs();
@@ -126,11 +86,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->cbProfiles->setCurrentIndex(row);
     UpdateProfileView();
 
-    //connect actions
+    //main menu actions
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::onAddFiles);
     connect(ui->actionAddFolder, &QAction::triggered, this, &MainWindow::onAddFolder);
     connect(ui->actionRemoveFailed, &QAction::triggered, this, &MainWindow::onRemoveFailed);
-    connect(ui->actionRemoveCompleted, &QAction::triggered, this, &MainWindow::onRemoveCpmpleted);
+    connect(ui->actionRemoveCompleted, &QAction::triggered, this, &MainWindow::onRemoveCompleted);
     connect(ui->actionRemoveAll, &QAction::triggered, this, &MainWindow::onRemoveAll);
     connect(ui->actionStartProcessing, &QAction::triggered, this, &MainWindow::onStartProcessing);
     connect(ui->actionStopProcessing, &QAction::triggered, this, &MainWindow::onStopProcessing);
@@ -142,20 +102,24 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionGitHub, &QAction::triggered, this, &MainWindow::onGitHub);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
 
-    //connect buttons
+    //context menu actions
+    connect(ui->actionProcessAll, &QAction::triggered, this, &MainWindow::onStartProcessing);
+
+    //button events
     connect(ui->pbHeaderFont, &QPushButton::clicked, this, &MainWindow::onHeaderFont);
     connect(ui->pbTimestampFont, &QPushButton::clicked, this, &MainWindow::onTimestampFont);
     connect(ui->pbOutputPath, &QPushButton::clicked, this, &MainWindow::onOutputPath);
 
-    //connect processing thread events
+    //processing thread events
     connect(&GeneratorThread, &CGeneratorThread::threadNotify, this, &MainWindow::threadNotify);
     connect(&GeneratorThread, &CGeneratorThread::threadFinished, this, &MainWindow::threadFinished);
 
     connect(ui->cbProfiles, &QComboBox::currentIndexChanged, this, &MainWindow::onProfileChanged);
 
-    //
+    //video list events
     connect(&HeaderView, &QHeaderView::sectionClicked, this, &MainWindow::sectionClicked);
-
+    connect(ui->tableView, &QTableView::customContextMenuRequested, this, &MainWindow::contextMenuVideoList);
+    connect(ui->tableView, &QTableView::doubleClicked, this, &MainWindow::doubleClickedVideoList);
 
     setWindowTitle(APP_FULL_NAME);
 }
@@ -175,9 +139,35 @@ void MainWindow::onAddFiles()
     if(fd.exec())
         fileNames = fd.selectedFiles();
 
-    //TODO:
+    VideoItemList.Add(fileNames);
+
+    const int section = HeaderView.sortIndicatorSection();
+    const Qt::SortOrder order = HeaderView.sortIndicatorOrder();
+    VideoItemList.sort(section, order);
 }
 void MainWindow::onAddFolder()
+{
+    QFileDialog dlg;
+    dlg.setAcceptMode(QFileDialog::AcceptOpen);
+    dlg.setFileMode(QFileDialog::Directory);
+    dlg.setOption(QFileDialog::ShowDirsOnly);
+    dlg.setOption(QFileDialog::DontResolveSymlinks);
+    dlg.setOption(QFileDialog::ReadOnly);
+    dlg.setLabelText(QFileDialog::LookIn, "Select directory with video files");
+    dlg.exec();
+    if(dlg.result() != QDialog::Accepted)
+        return;
+
+    QDir dir = dlg.directory();
+    QString path = dir.absolutePath() + "/";
+
+    QStringList file_names;
+    QDirIterator it(path, Settings.VideoFilters, QDir::Files, QDirIterator::Subdirectories);
+    while(it.hasNext())
+        file_names << it.next();
+    VideoItemList.Add(file_names);
+}
+void MainWindow::onRemoveSelected()
 {
     //TODO:
 }
@@ -185,7 +175,7 @@ void MainWindow::onRemoveFailed()
 {
     //TODO:
 }
-void MainWindow::onRemoveCpmpleted()
+void MainWindow::onRemoveCompleted()
 {
     //TODO:
 }
@@ -195,25 +185,69 @@ void MainWindow::onRemoveAll()
 }
 void MainWindow::sectionClicked(int logicalIndex)
 {
+    const int section = HeaderView.sortIndicatorSection();
+    const Qt::SortOrder order = HeaderView.sortIndicatorOrder();
+    VideoItemList.sort(section, order);
+}
+void MainWindow::doubleClickedVideoList(const QModelIndex &index)
+{
+    PVideoItem video_item = VideoItemList.Get(index);
+    if(nullptr == video_item)
+        return;
+
+    if(CVideoItemModel::COLUMN_VIDEO == index.column())
+        QDesktopServices::openUrl(QUrl(video_item->VideoFilePath, QUrl::TolerantMode));
+    else if(CVideoItemModel::COLUMN_VIDEO == index.column())
+    {
+        if(PIS_DONE == video_item->State)
+            QDesktopServices::openUrl(QUrl(video_item->ResultString, QUrl::TolerantMode));
+    }
+}
+void MainWindow::contextMenuVideoList(const QPoint &pos)
+{
+    QItemSelectionModel* ism = ui->tableView->selectionModel();
+    QModelIndex mi = ism->currentIndex();
+    PVideoItem focused_video = VideoItemList.Get(mi);
+
+    QPoint rel_pos;
+    rel_pos = ui->tableView->mapToGlobal(pos);
+    rel_pos.ry() += ui->tableView->horizontalHeader()->height();
+
     //TODO:
-    static bool video_accending = true;
-    static bool state_accending = true;
-    if(CVideoItemModel::COLUMN_VIDEO == logicalIndex)
+    QMenu menu(this);
+    menu.addAction(ui->actionAddFiles);
+    menu.addAction(ui->actionAddFolder);
+    menu.addSeparator();
+    menu.addAction(ui->actionProcessAll);
+    menu.exec(rel_pos);
+}
+PVideoItem MainWindow::GetVideoToProcess()
+{
+    const int count = VideoItemList.rowCount();
+    for(int row = 0; row < count; ++row)
     {
-        VideoItemList.sort(CVideoItemModel::COLUMN_VIDEO, video_accending ? Qt::AscendingOrder : Qt::DescendingOrder);
-        video_accending = !video_accending;
+        PVideoItem video = VideoItemList.Get(row);
+        Q_ASSERT(video);
+        if(video->State != PIS_WAIT)
+            continue;
+
+        //TODO: PROCESS_SELECTED
+        if(PROCESS_SELECTED == ProcessingState)
+            ;
+
+        return video;
     }
-    else if(CVideoItemModel::COLUMN_STATE == logicalIndex)
-    {
-        VideoItemList.sort(CVideoItemModel::COLUMN_STATE, state_accending ? Qt::AscendingOrder : Qt::DescendingOrder);
-        state_accending = !state_accending;
-    }
+
+    ProcessingState = PROCESS_NONE;
+    return nullptr;
 }
 void MainWindow::onStartProcessing()
 {
     if(GeneratorThread.isRunning())
         return;
 
+    //TODO: PROCESS_SELECTED
+    ProcessingState = PROCESS_ALL;
     PVideoItem video_item = GetVideoToProcess();
     if(nullptr == video_item)
         return;
@@ -226,12 +260,13 @@ void MainWindow::onStartProcessing()
 }
 void MainWindow::onStopProcessing()
 {
+    ProcessingState = PROCESS_NONE;
     GeneratorThread.Stop();
 }
 void MainWindow::threadNotify(int progress)
 {
-    //TODO:
-    qDebug() << "threadNotify: " << progress;
+    //qDebug() << "threadNotify: " << progress;
+    Q_ASSERT(CurrentVideo);
     if(CurrentVideo)
         CurrentVideo->State = progress;
 
@@ -240,13 +275,67 @@ void MainWindow::threadNotify(int progress)
 void MainWindow::threadFinished(int result, const QString &result_string)
 {
     //TODO:
-    qDebug() << "threadFinished: " << result_string;
-    if(CurrentVideo)
-    {
-        CurrentVideo->State = result;
-        CurrentVideo->ResultString = result_string;
-        VideoItemList.Update(CurrentVideo.get());
-    }
+    //qDebug() << "threadFinished: " << result_string;
+    if(nullptr == CurrentVideo)
+        return;
+
+    CurrentVideo->State = result;
+    CurrentVideo->ResultString = result_string;
+    VideoItemList.Update(CurrentVideo.get());
+
+    if(PROCESS_NONE == ProcessingState)
+        return;
+
+    PVideoItem video_item = GetVideoToProcess();
+    if(nullptr == video_item)
+        return;
+
+    GeneratorThread.Stop();
+    PProfile profile = GetCurrentProfile();
+    sl::COptions options;
+    CurrentVideo = video_item;
+    GeneratorThread.Start(video_item, profile, options);
+}
+
+void MainWindow::SaveSettings()
+{
+    QSettings qs;
+
+    qs.setValue("OverwriteFiles", Settings.OverwriteFiles);
+
+    qs.setValue("HeaderState", HeaderView.saveState());
+    qs.setValue("Splitter", ui->splitter->saveState());
+
+    qs.setValue("MainWindowGeometry", saveGeometry());
+    qs.setValue("MainWindowState", saveState());
+
+    qs.setValue("Profile", Settings.ProfileName);
+
+    //output dirs
+    // qs.beginWriteArray("OutputDirs");
+    // int index = 0;
+    // for(CBestScore::const_iterator i = BestResults.beign(); i != BestResults.end(); ++i, ++index)
+    // {
+    //     qs.setArrayIndex(index);
+    //     qs.setValue("result", i->first);
+    //     qs.setValue("date", i->second);
+    // }
+    // sq.endArray();
+}
+
+void MainWindow::LoadSettings()
+{
+    QSettings qs;
+
+    Settings.OverwriteFiles = qs.value("OverwriteFiles").toBool();
+
+    HeaderView.restoreState(qs.value("HeaderState").toByteArray());
+    ui->splitter->restoreState(qs.value("Splitter").toByteArray());
+
+    restoreGeometry(qs.value("MainWindowGeometry").toByteArray());
+    restoreState(qs.value("MainWindowState").toByteArray());
+
+    Settings.ProfileName = qs.value("Profile").toString();
 }
 void MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -258,7 +347,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QuerySaveProfile();
 
     Settings.ProfileName = ui->cbProfiles->currentText();
-    Settings.Save(this);
+    SaveSettings();
     ProfileModel.Save();
 
     if(event)
@@ -440,20 +529,6 @@ void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
         HeaderFont = font;
     else if(button == ui->pbTimestampFont)
         TimestampFont = font;
-}
-PVideoItem MainWindow::GetVideoToProcess()
-{
-    const int count = VideoItemList.rowCount();
-    for(int row = 0; row < count; ++row)
-    {
-        PVideoItem video = VideoItemList.Get(row);
-        Q_ASSERT(video);
-        if(video->State != PIS_WAIT)
-            continue;
-        return video;
-    }
-
-    return nullptr;
 }
 void MainWindow::UpdateOutputDirs(int item_index /*= 0*/)
 {
