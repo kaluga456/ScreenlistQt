@@ -44,6 +44,8 @@ class CProfile
 public:
     CProfile();
 
+    bool operator==(const CProfile& rop) const;
+
     QColor BgColor;
 
     //header

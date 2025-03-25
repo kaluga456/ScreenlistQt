@@ -5,8 +5,6 @@ CVideoItemModel::CVideoItemModel(QObject* parent) : QAbstractItemModel(parent)
 }
 CVideoItemModel::~CVideoItemModel()
 {
-    for(auto i : Items)
-        delete i;
 }
 int CVideoItemModel::columnCount(const QModelIndex &parent) const
 {
@@ -20,11 +18,11 @@ QVariant CVideoItemModel::data(const QModelIndex &index, int role) const
 {
     if(Qt::DisplayRole == role)
     {
-        const CVideoItem* pi = Get(index);
+        const PVideoItem pi = Get(index);
         switch(index.column())
         {
         case COLUMN_VIDEO: return pi->VideoFilePath;
-        case COLUMN_STATE: return pi->State;
+        case COLUMN_STATE: return GetStateString(pi->State);
         case COLUMN_RESULT: return pi->ResultString;
         }
     }
@@ -32,7 +30,8 @@ QVariant CVideoItemModel::data(const QModelIndex &index, int role) const
 }
 QModelIndex CVideoItemModel::index(int row, int column, const QModelIndex &parent) const
 {
-    return createIndex(row, column, Get(row));
+    //TODO:
+    return createIndex(row, column, Get(row).get());
 }
 QModelIndex CVideoItemModel::parent(const QModelIndex &index) const
 {
@@ -51,6 +50,28 @@ QVariant CVideoItemModel::headerData(int section, Qt::Orientation orientation, i
     }
     return QAbstractItemModel::headerData(section, orientation, role);
 }
+void CVideoItemModel::sort(int column, Qt::SortOrder order)
+{
+    //TODO:
+    if(COLUMN_VIDEO == column)
+    {
+        beginResetModel();
+        if(Qt::AscendingOrder == order)
+            std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->VideoFilePath < item2->VideoFilePath;});
+        else
+            std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->VideoFilePath > item2->VideoFilePath;});
+        endResetModel();
+    }
+    else if(COLUMN_STATE == column)
+    {
+        beginResetModel();
+        if(Qt::AscendingOrder == order)
+            std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->State < item2->State;});
+        else
+            std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->State > item2->State;});
+        endResetModel();
+    }
+}
 void CVideoItemModel::Add(const char *vide_file_path)
 {
     if(nullptr == vide_file_path)
@@ -65,25 +86,62 @@ void CVideoItemModel::Add(const char *vide_file_path)
     //         return;
     // }
 
-    Items.push_back(new CVideoItem(vide_file_path));
+    Items.push_back(PVideoItem(new CVideoItem(vide_file_path)));
 }
-CVideoItem* CVideoItemModel::Get(int row)
+PVideoItem CVideoItemModel::Get(int row)
+{
+    Q_ASSERT(row < Items.size());
+    return (row < Items.size()) ? Items[row] : PVideoItem();
+}
+const PVideoItem CVideoItemModel::Get(int row) const
 {
     Q_ASSERT(row < Items.size());
     return (row < Items.size()) ? Items[row] : nullptr;
 }
-const CVideoItem* CVideoItemModel::Get(int row) const
+
+int CVideoItemModel::GetRow(CVideoItem *video_item) const
 {
-    Q_ASSERT(row < Items.size());
-    return (row < Items.size()) ? Items[row] : nullptr;
+    if(nullptr == video_item)
+        return -1;
+
+    int row = -1;
+    int index = 0;
+    for(const auto& item : Items)
+    {
+        if(video_item == item.get())
+        {
+            row = index;
+            break;
+        }
+        ++index;
+    }
+    return row;
 }
-CVideoItem* CVideoItemModel::Get(const QModelIndex &index)
+
+void CVideoItemModel::Update(CVideoItem *video_item, bool full /*= true*/)
+{
+    const int row = GetRow(video_item);
+    if(row < 0)
+        return;
+
+    QModelIndex mi = createIndex(row, COLUMN_STATE);
+    QList<int>roles{Qt::DisplayRole};
+    emit dataChanged(mi, mi, roles);
+
+    if(full)
+    {
+        QModelIndex mi = createIndex(row, COLUMN_RESULT);
+        QList<int>roles{Qt::DisplayRole};
+        emit dataChanged(mi, mi, roles);
+    }
+}
+PVideoItem CVideoItemModel::Get(const QModelIndex &index)
 {
     const int i = index.row();
     Q_ASSERT(i < Items.size());
     return (i < Items.size()) ? Items[i] : nullptr;
 }
-const CVideoItem* CVideoItemModel::Get(const QModelIndex &index) const
+const PVideoItem CVideoItemModel::Get(const QModelIndex &index) const
 {
     const int i = index.row();
     Q_ASSERT(i < Items.size());

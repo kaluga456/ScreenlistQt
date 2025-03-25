@@ -3,6 +3,7 @@
 #include <QStandardItemModel>
 #include <QItemSelectionModel>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QFileDialog>
 #include <QFontDialog>
 #include <QThread>
@@ -76,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Settings.Load(this);
 
     //TEST:
+    VideoItemList.Add("D:/video/trash/data.mp4");
     VideoItemList.Add("item 1");
     VideoItemList.Add("item 2");
     VideoItemList.Add("item 3");
@@ -115,11 +117,13 @@ MainWindow::MainWindow(QWidget *parent) :
     TimestampModel.setDefaultRow(6);
     ui->cbTimestamp->setModel(&TimestampModel);
 
-    //TODO:
-    //init current profile
+    //init profiles
     ProfileModel.Load();
     ui->cbProfiles->setModel(&ProfileModel);
-    ui->cbProfiles->setCurrentIndex(0);
+
+    //TODO: read from settings
+    const int row = ProfileModel.getProfileRow(Settings.ProfileName);
+    ui->cbProfiles->setCurrentIndex(row);
     UpdateProfileView();
 
     //connect actions
@@ -146,6 +150,12 @@ MainWindow::MainWindow(QWidget *parent) :
     //connect processing thread events
     connect(&GeneratorThread, &CGeneratorThread::threadNotify, this, &MainWindow::threadNotify);
     connect(&GeneratorThread, &CGeneratorThread::threadFinished, this, &MainWindow::threadFinished);
+
+    connect(ui->cbProfiles, &QComboBox::currentIndexChanged, this, &MainWindow::onProfileChanged);
+
+    //
+    connect(&HeaderView, &QHeaderView::sectionClicked, this, &MainWindow::sectionClicked);
+
 
     setWindowTitle(APP_FULL_NAME);
 }
@@ -183,20 +193,71 @@ void MainWindow::onRemoveAll()
 {
     //TODO:
 }
-void MainWindow::onStartProcessing()
+void MainWindow::sectionClicked(int logicalIndex)
 {
     //TODO:
+    static bool video_accending = true;
+    static bool state_accending = true;
+    if(CVideoItemModel::COLUMN_VIDEO == logicalIndex)
+    {
+        VideoItemList.sort(CVideoItemModel::COLUMN_VIDEO, video_accending ? Qt::AscendingOrder : Qt::DescendingOrder);
+        video_accending = !video_accending;
+    }
+    else if(CVideoItemModel::COLUMN_STATE == logicalIndex)
+    {
+        VideoItemList.sort(CVideoItemModel::COLUMN_STATE, state_accending ? Qt::AscendingOrder : Qt::DescendingOrder);
+        state_accending = !state_accending;
+    }
+}
+void MainWindow::onStartProcessing()
+{
+    if(GeneratorThread.isRunning())
+        return;
+
     PVideoItem video_item = GetVideoToProcess();
+    if(nullptr == video_item)
+        return;
+
+    GeneratorThread.Stop();
     PProfile profile = GetCurrentProfile();
     sl::COptions options;
+    CurrentVideo = video_item;
     GeneratorThread.Start(video_item, profile, options);
 }
 void MainWindow::onStopProcessing()
 {
     GeneratorThread.Stop();
 }
+void MainWindow::threadNotify(int progress)
+{
+    //TODO:
+    qDebug() << "threadNotify: " << progress;
+    if(CurrentVideo)
+        CurrentVideo->State = progress;
+
+    VideoItemList.Update(CurrentVideo.get(), false);
+}
+void MainWindow::threadFinished(int result, const QString &result_string)
+{
+    //TODO:
+    qDebug() << "threadFinished: " << result_string;
+    if(CurrentVideo)
+    {
+        CurrentVideo->State = result;
+        CurrentVideo->ResultString = result_string;
+        VideoItemList.Update(CurrentVideo.get());
+    }
+}
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if(true == GeneratorThread.isRunning())
+    {
+        if(false == QueryYesNo("Stop current processing?"))
+            return;
+    }
+    QuerySaveProfile();
+
+    Settings.ProfileName = ui->cbProfiles->currentText();
     Settings.Save(this);
     ProfileModel.Save();
 
@@ -209,25 +270,101 @@ void MainWindow::onExit()
 {
     closeEvent(nullptr);
 }
+PProfile MainWindow::GetCurrentProfile()
+{
+    PProfile result(new CProfile);
+    result->HeaderType = HeaderModel.getData(ui->cbHeader->currentIndex());
+    result->ImageWidth = ui->leImageWidth->text().toInt();
+    result->GridColumns = ui->leGridColumns->text().toInt();
+    result->GridRows= ui->leGridRows->text().toInt();
+    result->Timestamp = TimestampModel.getData(ui->cbTimestamp->currentIndex());
+    result->HeaderFont = HeaderFont;
+    result->TimestampFont = TimestampFont;
+    return result;
+}
+void MainWindow::UpdateProfileView()
+{
+    PProfile profile = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
+    if(nullptr == profile)
+        return;
+
+    ui->cbHeader->setCurrentIndex(HeaderModel.getRow(profile->HeaderType));
+    ui->leImageWidth->setText(QString("%1").arg(profile->ImageWidth));
+    ui->leGridColumns->setText(QString("%1").arg(profile->GridColumns));
+    ui->leGridRows->setText(QString("%1").arg(profile->GridRows));
+    ui->cbTimestamp->setCurrentIndex(TimestampModel.getRow(profile->Timestamp));
+    SetFontButton(ui->pbHeaderFont, profile->HeaderFont);
+    SetFontButton(ui->pbTimestampFont, profile->TimestampFont);
+}
+void MainWindow::QuerySaveProfile()
+{
+    PProfile current = ProfileModel.getCurrentProfile();
+    if(nullptr == current)
+        return;
+
+    //no changes to current profile
+    PProfile changed = MainWindow::GetCurrentProfile();
+    if(true == current->Compare(*changed))
+        return;
+
+    if(false == QueryYesNo("Save profile \"" + current->Name + "\" ?"))
+        return;
+
+    changed->Name = current->Name;
+    ProfileModel.setProfile(ProfileModel.GetCurrentRow(), changed);
+}
+void MainWindow::onProfileChanged(int index)
+{
+    //QuerySaveProfile();
+    ProfileModel.SetCurrentRow(index);
+    UpdateProfileView();
+}
 void MainWindow::onProfileSave()
 {
-    //TODO:
+    QString profile_name = ui->cbProfiles->currentText();
+
+    QInputDialog dlg;
+    dlg.setWindowTitle(APP_NAME);
+    dlg.setInputMode(QInputDialog::TextInput);
+    dlg.setTextValue(profile_name);
+    dlg.setLabelText("Save current profile?");
+    dlg.exec();
+    if(QMessageBox::Accepted != dlg.result())
+        return;
+
+    //don`t save profile with empty name
+    profile_name = dlg.textValue().trimmed();
+    if(profile_name.isEmpty())
+        return;
+
+    const int row = ProfileModel.getProfileRow(profile_name);
+    PProfile current = GetCurrentProfile();
+
+    if(row < 0) //new profile
+    {
+        const int new_row = ProfileModel.addProfile(profile_name, current);
+
+        //TODO: don`t save existing profile
+        ui->cbProfiles->setCurrentIndex(new_row);
+        return;
+    }
+
+    //existing profile
+    current->Name = profile_name;
+    ProfileModel.setProfile(row, current);
 }
 void MainWindow::onProfileDelete()
 {
-    //TODO:
-    QString profile_name = "<profile_to_delete>";
-
-    QMessageBox mb;
-    mb.setIcon(QMessageBox::Warning);
-    mb.setWindowTitle(APP_NAME);
-    mb.setText("Delete profile " + profile_name + " ?");
-    mb.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-    mb.setDefaultButton(QMessageBox::Ok);
-    if(QMessageBox::Ok != mb.exec())
+    QString profile_name = ui->cbProfiles->currentText();
+    if(profile_name.isEmpty())
         return;
 
-    //TODO:
+    const int row = ProfileModel.getProfileRow(profile_name);
+    if(row < 0)
+        return;
+    if(false == QueryYesNo("Delete profile \"" + profile_name + "\" ?"))
+        return;
+    ProfileModel.deleteProfile(row);
 }
 void MainWindow::onProfilePreview()
 {
@@ -254,12 +391,12 @@ void MainWindow::onGitHub()
 }
 void MainWindow::onAbout()
 {
-    QMessageBox mb;
-    mb.setIcon(QMessageBox::Information);
-    mb.setWindowTitle(APP_NAME);
-    mb.setText(APP_FULL_NAME "\n" APP_URL);
-    mb.setStandardButtons(QMessageBox::Ok);
-    mb.exec();
+    QMessageBox dlg;
+    dlg.setIcon(QMessageBox::Information);
+    dlg.setWindowTitle(APP_NAME);
+    dlg.setText(APP_FULL_NAME "\n" APP_URL);
+    dlg.setStandardButtons(QMessageBox::Ok);
+    dlg.exec();
 }
 void MainWindow::onHeaderFont()
 {
@@ -290,46 +427,6 @@ void MainWindow::onOutputPath()
 
     UpdateOutputDirs(item_index);
 }
-void MainWindow::threadNotify(int progress)
-{
-    //TODO:
-    qDebug() << "threadNotify: " << progress;
-}
-void MainWindow::threadFinished(int result, const QString &result_string)
-{
-    //TODO:
-    qDebug() << "threadFinished: " << result_string;
-}
-void MainWindow::ShowErrorBox(QString error_text)
-{
-    QMessageBox mb;
-    mb.setIcon(QMessageBox::Warning);
-    mb.setWindowTitle(APP_NAME);
-    mb.setText(error_text);
-    mb.setStandardButtons(QMessageBox::Ok);
-    mb.setDefaultButton(QMessageBox::Ok);
-    mb.exec();
-}
-PProfile MainWindow::GetCurrentProfile()
-{
-    //TODO:
-    PProfile profile = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
-    Q_ASSERT(profile.get());
-    return profile;
-}
-void MainWindow::UpdateProfileView()
-{
-    PProfile profile = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
-    Q_ASSERT(profile.get());
-    ui->cbHeader->setCurrentIndex(HeaderModel.getRow(profile->HeaderType));
-    ui->leImageWidth->setText(QString("%1").arg(profile->ImageWidth));
-    ui->leGridColumns->setText(QString("%1").arg(profile->GridColumns));
-    ui->leGridRows->setText(QString("%1").arg(profile->GridRows));
-    ui->cbTimestamp->setCurrentIndex(TimestampModel.getRow(profile->Timestamp));
-
-    SetFontButton(ui->pbHeaderFont, profile->HeaderFont);
-    SetFontButton(ui->pbTimestampFont, profile->TimestampFont);
-}
 void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
 {
     QFont pb_font = font;
@@ -346,9 +443,17 @@ void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
 }
 PVideoItem MainWindow::GetVideoToProcess()
 {
-    //TODO:
-    PVideoItem video(new CVideoItem("D:/video/trash/data.mp4"));
-    return video;
+    const int count = VideoItemList.rowCount();
+    for(int row = 0; row < count; ++row)
+    {
+        PVideoItem video = VideoItemList.Get(row);
+        Q_ASSERT(video);
+        if(video->State != PIS_WAIT)
+            continue;
+        return video;
+    }
+
+    return nullptr;
 }
 void MainWindow::UpdateOutputDirs(int item_index /*= 0*/)
 {
@@ -358,4 +463,24 @@ void MainWindow::UpdateOutputDirs(int item_index /*= 0*/)
     if(ui->cbOutputDir->count() <= item_index)
         item_index = 0;
     ui->cbOutputDir->setCurrentIndex(item_index);
+}
+void MainWindow::ShowErrorBox(QString error_text)
+{
+    QMessageBox dlg;
+    dlg.setIcon(QMessageBox::Warning);
+    dlg.setWindowTitle(APP_NAME);
+    dlg.setText(error_text);
+    dlg.setStandardButtons(QMessageBox::Ok);
+    dlg.setDefaultButton(QMessageBox::Ok);
+    dlg.exec();
+}
+bool MainWindow::QueryYesNo(QString prompt)
+{
+    QMessageBox dlg;
+    dlg.setIcon(QMessageBox::Warning);
+    dlg.setWindowTitle(APP_NAME);
+    dlg.setText(prompt);
+    dlg.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    dlg.setDefaultButton(QMessageBox::Ok);
+    return QMessageBox::Ok == dlg.exec();
 }

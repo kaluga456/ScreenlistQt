@@ -15,6 +15,8 @@ enum
     PIS_FAILED                 //processed with error
 };
 
+QString GetStateString(int item_state);
+
 class CVideoItem
 {
 public:

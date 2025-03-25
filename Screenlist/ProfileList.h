@@ -8,6 +8,9 @@ class CProfile : public sl::CProfile
 {
 public:
     QString Name;
+
+    //compares only sl::CProfile data
+    bool Compare(const CProfile& rop) const;
 };
 using PProfile = std::shared_ptr<CProfile>;
 
@@ -26,15 +29,23 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
     void setProfile(int row, PProfile profile);
-    void addProfile(QString name, PProfile profile);
+    int addProfile(QString name, PProfile profile);
     void deleteProfile(int row);
+
+    //access
     PProfile getProfile(int row) const;
+    PProfile getProfile(QString name) const;
+    int getProfileRow(QString name) const;
+    PProfile getCurrentProfile() const;
+    void SetCurrentRow(int row);
+    int GetCurrentRow() const {return CurrentRow;}
 
     //serialization
     void Load();
     void Save();
 
 private:
+    int CurrentRow{-1};
     void beginReset() {beginResetModel();}
     void endReset() {endResetModel();}
     std::vector<PProfile> Profiles;

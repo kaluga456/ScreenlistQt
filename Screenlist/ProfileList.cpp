@@ -9,7 +9,7 @@ constexpr quint32 PROFILES_FILE_HEADER = 0xF103A86C;
 constexpr quint32 PROFILES_FILE_VERSION = 1;
 constexpr quint32 MAX_PROFILES = 50;
 
-CProfileModel::CProfileModel()
+CProfileModel::CProfileModel() : CurrentRow{-1}
 {
 }
 CProfileModel::~CProfileModel()
@@ -31,19 +31,38 @@ QVariant CProfileModel::data(const QModelIndex &index, int role) const
 }
 void CProfileModel::setProfile(int row, PProfile profile)
 {
-    //TODO:
+    Q_ASSERT(row < Profiles.size() && profile);
+    if(row >= Profiles.size() || nullptr == profile)
+        return;
+
+    Profiles[row] = profile;
 }
-void CProfileModel::addProfile(QString name, PProfile profile)
+int CProfileModel::addProfile(QString name, PProfile profile)
 {
+    CResetModel reset_model(this);
     //TODO: ignore duplicates
+    profile->Name = name;
     Profiles.push_back(profile);
+    return Profiles.size() - 1;
 }
 void CProfileModel::deleteProfile(int row)
 {
     Q_ASSERT(row < Profiles.size());
     if(row >= Profiles.size())
         return;
+
+    CResetModel reset_model(this);
     Profiles.erase(Profiles.begin() + row);
+    CurrentRow = -1;
+}
+void CProfileModel::SetCurrentRow(int row)
+{
+    if(row < Profiles.size())
+    {
+        CurrentRow = row;
+        return;
+    }
+    CurrentRow = -1;
 }
 PProfile CProfileModel::getProfile(int row) const
 {
@@ -51,6 +70,35 @@ PProfile CProfileModel::getProfile(int row) const
     if(row >= Profiles.size())
         return PProfile();
     return Profiles[row];
+}
+
+PProfile CProfileModel::getProfile(QString name) const
+{
+    for(auto& profile : Profiles)
+    {
+        if(0 == name.compare(profile->Name, Qt::CaseInsensitive))
+            return profile;
+    }
+    return PProfile();
+}
+
+int CProfileModel::getProfileRow(QString name) const
+{
+    for(int row = 0; row < Profiles.size(); ++row)
+    {
+        PProfile profile = Profiles[row];
+        if(0 == name.compare(profile->Name, Qt::CaseInsensitive))
+            return row;
+    }
+    return -1;
+}
+PProfile CProfileModel::getCurrentProfile() const
+{
+    if(CurrentRow < 0)
+        return PProfile();
+
+    Q_ASSERT(CurrentRow < Profiles.size());
+    return Profiles[CurrentRow];
 }
 void CProfileModel::Load()
 {
@@ -148,4 +196,11 @@ void CProfileModel::Save()
         stream << profile->Timestamp;
         stream << profile->TimestampFont;
     }
+}
+
+bool CProfile::Compare(const CProfile &rop) const
+{
+    const sl::CProfile* sl_profile = this;
+    const sl::CProfile* sl_rop = &rop;
+    return *sl_profile == *sl_rop;
 }

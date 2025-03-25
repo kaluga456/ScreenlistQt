@@ -79,18 +79,25 @@ private slots:
     void onTimestampFont();
     void onOutputPath();
 
+    //combo boxes
+    void onProfileChanged(int index);
+
+    //video list
+    void sectionClicked(int logicalIndex);
+
     //processing thread events
     void threadNotify(int progress);
     void threadFinished(int result, const QString& result_string);
 
 private:
     Ui::MainWindow *ui;
-
-    QHeaderView HeaderView;
-    CVideoItemModel VideoItemList;
     CGeneratorThread GeneratorThread;
 
-    void ShowErrorBox(QString error_text);
+    //video items list
+    PVideoItem CurrentVideo;
+    QHeaderView HeaderView;
+    CVideoItemModel VideoItemList;
+
 
     //combo boxes
     CStrIntModel HeaderModel;
@@ -103,6 +110,11 @@ private:
     PProfile GetCurrentProfile();
     void UpdateProfileView();
     void SetFontButton(QPushButton* button, const QFont &font);
+
+    //dialogs
+    void ShowErrorBox(QString error_text);
+    bool QueryYesNo(QString prompt);
+    void QuerySaveProfile();
 
     //video items
     PVideoItem GetVideoToProcess();
