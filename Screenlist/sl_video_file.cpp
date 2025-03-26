@@ -8,11 +8,11 @@
 using namespace sl;
 
 //header painter
-constexpr size_t HEADER_VERTICAL_PADDING = 5; //vertical padding, px
-constexpr size_t HEADER_LINES_COUNT = 4;
+constexpr int HEADER_VERTICAL_PADDING = 5; //vertical padding, px
+constexpr int HEADER_LINES_COUNT = 4;
 
 constexpr int SIGNAL_WAIT_TIMEOUT = 3000;
-CVideoFile::CVideoFile(const char *video_file_path /*= nullptr*/) :
+CVideoFile::CVideoFile(QString video_file_path) :
     MediaPlayer{nullptr},
     VideoSink{nullptr}
 {
@@ -37,7 +37,7 @@ void CVideoFile::mediaStatusChanged(QMediaPlayer::MediaStatus status)
 }
 void CVideoFile::positionChanged(qint64 position)
 {
-    qDebug() << "positionChanged" << position;
+    //qDebug() << "positionChanged" << position;
 }
 QString CVideoFile::GetFileName() const
 {
@@ -47,10 +47,10 @@ QString CVideoFile::GetFileName() const
     QDir relative_name(FilePath);
     return relative_name.dirName();
 };
-int CVideoFile::Open(const char *video_file_path)
+int CVideoFile::Open(QString video_file_path)
 {
     Close();
-    if(nullptr == video_file_path)
+    if(video_file_path.isEmpty())
     {
         Image = QImage(SAMPLE_FRAME_RES_NAME);
         SL_VERIFY(false == Image.isNull());

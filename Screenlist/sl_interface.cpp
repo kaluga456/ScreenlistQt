@@ -10,7 +10,7 @@
 
 using namespace sl;
 
-int sl::generate(const char *video_file_path,
+int sl::generate(QString video_file_path,
                  const CProfile &profile,
                  const COptions &options,
                  QString& result_string,
@@ -18,10 +18,9 @@ int sl::generate(const char *video_file_path,
 {
     try
     {
-        QString result_string;
-        CScreenlist output;
+        CGenerator output;
 
-        qDebug() << "sl::generate(" << (video_file_path ? video_file_path : "") << ")";
+        qDebug() << "sl::generate: " << video_file_path;
         const int result = output.Generate(video_file_path, profile, options, result_string, event_callback);
         qDebug() << "sl::generate(): result = " << result << ": " << result_string;
         return result;

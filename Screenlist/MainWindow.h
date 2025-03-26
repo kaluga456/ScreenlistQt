@@ -7,7 +7,6 @@
 #include <QMainWindow>
 #include <QPushButton>
 
-#include "sl_interface.h"
 #include "VideoItem.h"
 #include "ProfileList.h"
 #include "VdeoListModel.h"
@@ -105,6 +104,6 @@ private:
     void closeEvent(QCloseEvent *event) override;
 
     //controls
-    void UpdateOutputDirs(int item_index = 0);
+    void UpdateOutputDirs(int item_index = -1);
 };
 #endif // MAINWINDOW_H

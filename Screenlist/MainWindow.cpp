@@ -15,6 +15,7 @@
 
 #include "about.h"
 #include "sl_options.h"
+#include "sl_interface.h"
 #include "Settings.h"
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
@@ -28,10 +29,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     //TEST:
-    VideoItemList.Add("D:/video/trash/data.mp4");
-    VideoItemList.Add("item 1");
-    VideoItemList.Add("item 2");
-    VideoItemList.Add("item 3");
+    VideoItemList.Add("d:/video/test/data.mp4");
+    // VideoItemList.Add("d:/video/test/5.mp4");
+    // VideoItemList.Add("d:/video/test/C1.mp4");
 
     //init header view
     const QFont table_view_font = ui->tableView->font();
@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //init table view
     ui->tableView->setHorizontalHeader(&HeaderView);
     ui->tableView->setModel(&VideoItemList);
-    ui->tableView->setShowGrid(false);
+    ui->tableView->setShowGrid(true);
     ui->tableView->verticalHeader()->hide();
     ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->tableView->verticalHeader()->setDefaultSectionSize(table_view_font.pointSize());
@@ -57,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     //TODO: init controls
-    UpdateOutputDirs();
+    UpdateOutputDirs(Settings.LastOutputDir);
 
     //header combo
     HeaderModel.addItem("Disabled", sl::HEADER_DISABLED);
@@ -185,6 +185,7 @@ void MainWindow::onRemoveAll()
 }
 void MainWindow::sectionClicked(int logicalIndex)
 {
+    //NOTE: QHeaderVIew::sortIndicatorChanged
     const int section = HeaderView.sortIndicatorSection();
     const Qt::SortOrder order = HeaderView.sortIndicatorOrder();
     VideoItemList.sort(section, order);
@@ -197,7 +198,7 @@ void MainWindow::doubleClickedVideoList(const QModelIndex &index)
 
     if(CVideoItemModel::COLUMN_VIDEO == index.column())
         QDesktopServices::openUrl(QUrl(video_item->VideoFilePath, QUrl::TolerantMode));
-    else if(CVideoItemModel::COLUMN_VIDEO == index.column())
+    else if(CVideoItemModel::COLUMN_RESULT == index.column())
     {
         if(PIS_DONE == video_item->State)
             QDesktopServices::openUrl(QUrl(video_item->ResultString, QUrl::TolerantMode));
@@ -254,7 +255,11 @@ void MainWindow::onStartProcessing()
 
     GeneratorThread.Stop();
     PProfile profile = GetCurrentProfile();
+
+    //TODO:
     sl::COptions options;
+    options.OverwriteFiles = true;
+    options.OutputPath = ui->cbOutputDir->currentIndex() ? ui->cbOutputDir->currentText() : "";
     CurrentVideo = video_item;
     GeneratorThread.Start(video_item, profile, options);
 }
@@ -265,7 +270,6 @@ void MainWindow::onStopProcessing()
 }
 void MainWindow::threadNotify(int progress)
 {
-    //qDebug() << "threadNotify: " << progress;
     Q_ASSERT(CurrentVideo);
     if(CurrentVideo)
         CurrentVideo->State = progress;
@@ -274,8 +278,6 @@ void MainWindow::threadNotify(int progress)
 }
 void MainWindow::threadFinished(int result, const QString &result_string)
 {
-    //TODO:
-    //qDebug() << "threadFinished: " << result_string;
     if(nullptr == CurrentVideo)
         return;
 
@@ -312,15 +314,17 @@ void MainWindow::SaveSettings()
     qs.setValue("Profile", Settings.ProfileName);
 
     //output dirs
-    // qs.beginWriteArray("OutputDirs");
-    // int index = 0;
-    // for(CBestScore::const_iterator i = BestResults.beign(); i != BestResults.end(); ++i, ++index)
-    // {
-    //     qs.setArrayIndex(index);
-    //     qs.setValue("result", i->first);
-    //     qs.setValue("date", i->second);
-    // }
-    // sq.endArray();
+    qs.setValue("LastOutputDir", ui->cbOutputDir->currentIndex());
+    qs.beginWriteArray("OutputDirs");
+    QStringList::const_iterator dir_i = Settings.OutputDirs.begin();
+    ++dir_i;
+    int index = 0;
+    for(; dir_i != Settings.OutputDirs.end(); ++dir_i, ++index)
+    {
+        qs.setArrayIndex(index);
+        qs.setValue("dir", *dir_i);
+    }
+    qs.endArray();
 }
 
 void MainWindow::LoadSettings()
@@ -336,6 +340,18 @@ void MainWindow::LoadSettings()
     restoreState(qs.value("MainWindowState").toByteArray());
 
     Settings.ProfileName = qs.value("Profile").toString();
+
+    //output dirs
+    Settings.LastOutputDir = qs.value("LastOutputDir").toInt();
+    qs.setValue("LastOutputDir", ui->cbOutputDir->currentIndex());
+    const int size = std::max(qs.beginReadArray("OutputDirs"), COutputDirList::MAX_OUTPUT_DIRS);
+    for (int i = 0; i < size && i < COutputDirList::MAX_OUTPUT_DIRS; ++i)
+    {
+        qs.setArrayIndex(i);
+        QString dir = qs.value("dir").toString();
+        Settings.OutputDirs.Add(dir);
+    }
+    qs.endArray();
 }
 void MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -387,7 +403,7 @@ void MainWindow::UpdateProfileView()
 }
 void MainWindow::QuerySaveProfile()
 {
-    PProfile current = ProfileModel.getCurrentProfile();
+    PProfile current = ProfileModel.getProfile(ui->cbProfiles->currentIndex());
     if(nullptr == current)
         return;
 
@@ -457,7 +473,7 @@ void MainWindow::onProfileDelete()
 }
 void MainWindow::onProfilePreview()
 {
-    const CProfile* profile = GetCurrentProfile().get();
+    const PProfile profile = GetCurrentProfile();
     sl::COptions options;
     options.OverwriteFiles = true;
     options.OutputPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
@@ -468,7 +484,11 @@ void MainWindow::onProfilePreview()
         return;
     }
     QString file_path = options.OutputPath + "//" + sl::PREVIEW_FILE_NAME;
-    QDesktopServices::openUrl(QUrl(file_path, QUrl::TolerantMode));
+    if(false == QDesktopServices::openUrl(QUrl(file_path, QUrl::TolerantMode)))
+    {
+        ShowErrorBox("Can`t open preview image\n" + file_path);
+        return;
+    }
 }
 void MainWindow::onSettings()
 {
@@ -505,7 +525,6 @@ void MainWindow::onTimestampFont()
 }
 void MainWindow::onOutputPath()
 {
-    //TODO: Settings.LastOutputDir
     QString dir = QFileDialog::getExistingDirectory(this, "Select directory for output files");
     if(dir.isEmpty())
         return;
@@ -530,11 +549,13 @@ void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
     else if(button == ui->pbTimestampFont)
         TimestampFont = font;
 }
-void MainWindow::UpdateOutputDirs(int item_index /*= 0*/)
+void MainWindow::UpdateOutputDirs(int item_index /*= -1*/)
 {
     ui->cbOutputDir->clear();
     for(const auto& i : Settings.OutputDirs)
         ui->cbOutputDir->addItem(i);
+    if(item_index < 0)
+        return;
     if(ui->cbOutputDir->count() <= item_index)
         item_index = 0;
     ui->cbOutputDir->setCurrentIndex(item_index);

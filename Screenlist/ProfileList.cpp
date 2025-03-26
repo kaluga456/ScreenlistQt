@@ -90,7 +90,7 @@ void CProfileModel::setProfile(int row, PProfile profile)
 }
 int CProfileModel::addProfile(QString name, PProfile profile)
 {
-    CResetModel reset_model(this);
+    //CResetModel reset_model(this);
     //TODO: ignore duplicates
     profile->Name = name;
     Profiles.push_back(profile);
@@ -102,7 +102,7 @@ void CProfileModel::deleteProfile(int row)
     if(row >= Profiles.size())
         return;
 
-    CResetModel reset_model(this);
+    //CResetModel reset_model(this);
     Profiles.erase(Profiles.begin() + row);
     CurrentRow = -1;
 }
@@ -153,7 +153,7 @@ PProfile CProfileModel::getCurrentProfile() const
 }
 void CProfileModel::Load()
 {
-    CResetModel reset_model(this);
+    //CResetModel reset_model(this);
     Profiles.clear();
 
     QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_FILE_NAME;

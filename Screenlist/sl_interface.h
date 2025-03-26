@@ -7,7 +7,7 @@
 namespace sl
 {
 
-int generate(const char* video_file_path,
+int generate(QString video_file_path,
              const CProfile& profile,
              const COptions& options,
              QString& result_string,

@@ -9,21 +9,17 @@
 namespace sl
 {
 
-class CScreenlist
+class CGenerator
 {
 public:
-    CScreenlist();
-    ~CScreenlist();
+    CGenerator();
+    ~CGenerator();
 
-    int Generate(const char *video_file_path,
+    int Generate(QString video_file_path,
                  const CProfile &profile,
                  const COptions& options,
                  QString& result_string,
                  IEventCallback* event_callback = nullptr);
-
-private:
-    // QPixmap* Pixmap{nullptr};
-    // QPainter* Painter{nullptr};
 };
 
 }

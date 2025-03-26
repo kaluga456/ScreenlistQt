@@ -22,11 +22,11 @@ class CVideoFile : public QObject
 
 public:
     //ctor/dtor
-    CVideoFile(const char* video_file_path = nullptr);
+    CVideoFile(QString video_file_path);
     ~CVideoFile();
 
     //init
-    int Open(const char* video_file_name);
+    int Open(QString video_file_path);
     void Close();
 
     //access

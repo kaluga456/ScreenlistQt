@@ -7,7 +7,7 @@ constexpr const char* DEFAULT_PROFILE_FONT_NAME = "Times";
 
 //default profile
 CProfile::CProfile() :
-    BgColor{QColor(32,32,32)},
+    BgColor{QColor(0,0,0)},
     HeaderType{true},
     HeaderFontColor{QColor(255,255,255)},
     HeaderFont{QFont{DEFAULT_PROFILE_FONT_NAME, DEFAULT_PROFILE_FONT_SIZE}},

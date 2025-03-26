@@ -32,7 +32,7 @@ void CGeneratorThread::Stop()
 }
 void CGeneratorThread::run()
 {
-    qDebug() << "CGeneratorThread start: " << QThread::currentThreadId();
+    //qDebug() << "CGeneratorThread start: " << QThread::currentThreadId();
 
     int result = PIS_FAILED;
     QString result_string;
@@ -43,16 +43,14 @@ void CGeneratorThread::run()
     result = shallow_proc(result_string);
 #endif //SHALLOW_PROCESSING
 
-    emit threadFinished(result, "<result text>");
+    emit threadFinished((result == sl::RESULT_SUCCESS) ? PIS_DONE : PIS_FAILED, result_string);
 
-    qDebug() << "CGeneratorThread end: " << QThread::currentThreadId();
+    //qDebug() << "CGeneratorThread end: " << QThread::currentThreadId();
 }
 
 int CGeneratorThread::generate(QString& result_string)
 {
-    //TODO:
-    const char* video_file_path = VideoFilePath.toLatin1().data();
-    return sl::generate(video_file_path, Profile, Options, result_string, this);
+    return sl::generate(VideoFilePath, Profile, Options, result_string, this);
 }
 
 int CGeneratorThread::shallow_proc(QString& result_string)

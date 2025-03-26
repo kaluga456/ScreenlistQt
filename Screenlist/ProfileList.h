@@ -45,7 +45,7 @@ public:
 using PProfile = std::shared_ptr<CProfile>;
 //////////////////////////////////////////////////////////////////////////////
 //profiles
-//TODO: default profile
+//TODO: default profiles
 class CProfileModel : public QStringListModel
 {
     friend class CResetModel;
@@ -81,13 +81,13 @@ private:
     std::vector<PProfile> Profiles;
 };
 
-class CResetModel
-{
-public:
-    CResetModel(CProfileModel* model) : Model(model) {Model->beginResetModel();}
-    ~CResetModel() {Model->endResetModel();}
-private:
-    CProfileModel* Model;
-};
+// class CResetModel
+// {
+// public:
+//     CResetModel(CProfileModel* model) : Model(model) {Model->beginResetModel();}
+//     ~CResetModel() {Model->endResetModel();}
+// private:
+//     CProfileModel* Model;
+// };
 
 #endif // PROFILELIST_H

@@ -91,13 +91,13 @@ static Qt::AlignmentFlag GetTimastampAlignment(int Timestamp)
     return static_cast<Qt::AlignmentFlag>(result);
 }
 
-QString GetOutputFilePath(const char *video_file_path, const COptions& options)
+QString GetOutputFilePath(QString video_file_path, const COptions& options)
 {
     QString output_path = options.OutputPath;
-    if(output_path.back() != '\\' && output_path.back() != '/')
+    if(false == output_path.isEmpty() && output_path.back() != '\\' && output_path.back() != '/')
         output_path.push_back('/');
 
-    if(nullptr == video_file_path)
+    if(video_file_path.isEmpty())
         return output_path + PREVIEW_FILE_NAME;
 
     if(options.OutputPath.isEmpty())
@@ -108,15 +108,13 @@ QString GetOutputFilePath(const char *video_file_path, const COptions& options)
     return output_path + file_name;
 }
 
-CScreenlist::CScreenlist()// : Pixmap{nullptr}, Painter{nullptr}
+CGenerator::CGenerator()
 {
 }
-CScreenlist::~CScreenlist()
+CGenerator::~CGenerator()
 {
-    // delete Painter;
-    // delete Pixmap;
 }
-int CScreenlist::Generate(const char *video_file_path,
+int CGenerator::Generate(QString video_file_path,
                           const CProfile &profile,
                           const COptions& options,
                           QString& result_string,
@@ -143,10 +141,10 @@ int CScreenlist::Generate(const char *video_file_path,
         }
     }
 
-    //init video file
-    CVideoFile video_file;
-    if(0 != video_file.Open(video_file_path))
-        return RESULT_FAILED;
+    //TODO: init video file
+    CVideoFile video_file(video_file_path);
+    // if(0 != video_file.Open(video_file_path))
+    //     return RESULT_FAILED;
 
     //video file attributes
     const qint64 video_file_size = video_file.GetFileSize(); //bytes
@@ -161,13 +159,12 @@ int CScreenlist::Generate(const char *video_file_path,
     int header_height = 0;
     if(profile.HeaderType)
     {
-        const int line_height = static_cast<int>(profile.HeaderFont.pointSize() * 1.2);
-        header_height = HEADER_TEXT_PAD + HEADER_LINES_COUNT * line_height + 3*HEADER_TEXT_PAD;
+        const int line_height = static_cast<int>(profile.HeaderFont.pointSize() * 2);
+        header_height = HEADER_TEXT_PAD + HEADER_LINES_COUNT * line_height + 3 * HEADER_TEXT_PAD;
     }
 
     //grid
     const float aspect_ration = static_cast<float>(frame_width) / static_cast<float>(frame_height);
-    const int frame_count = profile.GridRows * profile.GridColumns;
     const int out_frame_width = static_cast<float>(profile.ImageWidth) / profile.GridColumns;
     const int out_frame_height = out_frame_width / aspect_ration;
     const int output_height = header_height + out_frame_height * profile.GridRows;
@@ -201,11 +198,12 @@ int CScreenlist::Generate(const char *video_file_path,
                                  header_text.c_str(), text_options);
     }
 
-
-    Painter->setBackgroundMode(Qt::TransparentMode);
+    //write frames grid
+    const int frame_count = profile.GridRows * profile.GridColumns;
     const qint64 interval = duration / (frame_count + 1);
     qint64 current_position = interval;
     int frame_index = 0;
+    Painter->setBackgroundMode(Qt::TransparentMode);
     for (int y = 0; y < profile.GridRows; ++y)
     {
         for (int x = 0; x < profile.GridColumns; ++x)
@@ -252,7 +250,7 @@ int CScreenlist::Generate(const char *video_file_path,
             }
 
             if(event_callback)
-                event_callback->SetProgress(100.f * (frame_count - frame_index) / frame_count);
+                event_callback->SetProgress(100.f * frame_index / frame_count);
 
             //go to next frame
             current_position += interval;

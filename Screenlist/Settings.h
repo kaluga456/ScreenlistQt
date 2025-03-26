@@ -13,7 +13,7 @@ constexpr const char* FILE_DIALOG_FILTER = "Video Files (*.avi *.mkv *.mp4 *.m4v
 class COutputDirList
 {
 public:
-    static constexpr int MAX_OUTPUT_DIRS = 4;
+    static constexpr int MAX_OUTPUT_DIRS = 10;
 
     COutputDirList();
 
