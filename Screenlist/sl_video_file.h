@@ -25,10 +25,6 @@ public:
     CVideoFile(QString video_file_path);
     ~CVideoFile();
 
-    //init
-    int Open(QString video_file_path);
-    void Close();
-
     //access
     QString GetFilePath() const;
     QString GetFileName() const;

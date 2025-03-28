@@ -6,8 +6,6 @@
 
 using namespace sl;
 
-constexpr int HEADER_TEXT_PAD = 4;
-constexpr int HEADER_LINES_COUNT = 4;
 constexpr const char* HEADER_FORMAT_STRING = "File Name: {:s}\nFile Size: {:s}\nResolution: {:d}x{:d}\nDuration: {:s}";
 
 //TODO: sanity check
@@ -70,25 +68,18 @@ std::string GetFileSizeString(const qint64& file_size)
 }
 
 //convert TIMESTAMP_TYPE_ to QTextOption
-static Qt::AlignmentFlag GetTimastampAlignment(int Timestamp)
+static Qt::Alignment GetTimastampAlignment(int timestamp)
 {
-    int result = 0;
-
-    //horz alignment
-    if(Timestamp & TIMESTAMP_TYPE_CENTER)
-        result |= Qt::AlignHCenter;
-    else if(Timestamp & TIMESTAMP_TYPE_LEFT)
-        result |= Qt::AlignLeft;
-    else
-        result |= Qt::AlignRight;
-
-    //vert alignment
-    if(Timestamp & TIMESTAMP_TYPE_BOTTOM)
-        result |= Qt::AlignBottom;
-    else
-        result |= Qt::AlignTop;
-
-    return static_cast<Qt::AlignmentFlag>(result);
+    switch(timestamp)
+    {
+    case TIMESTAMP_TYPE_TOP_LEFT: return Qt::AlignTop | Qt::AlignLeft;
+    case TIMESTAMP_TYPE_TOP_CENTER: return Qt::AlignTop | Qt::AlignHCenter;
+    case TIMESTAMP_TYPE_TOP_RIGHT: return Qt::AlignTop | Qt::AlignRight;
+    case TIMESTAMP_TYPE_BOTTOM_LEFT: return Qt::AlignBottom | Qt::AlignLeft;
+    case TIMESTAMP_TYPE_BOTTOM_CENTER: return Qt::AlignBottom | Qt::AlignHCenter;
+    case TIMESTAMP_TYPE_BOTTOM_RIGHT: return Qt::AlignBottom | Qt::AlignRight;
+    }
+    return Qt::Alignment();
 }
 
 QString GetOutputFilePath(QString video_file_path, const COptions& options)
@@ -141,10 +132,8 @@ int CGenerator::Generate(QString video_file_path,
         }
     }
 
-    //TODO: init video file
+    //init video file
     CVideoFile video_file(video_file_path);
-    // if(0 != video_file.Open(video_file_path))
-    //     return RESULT_FAILED;
 
     //video file attributes
     const qint64 video_file_size = video_file.GetFileSize(); //bytes
@@ -157,10 +146,16 @@ int CGenerator::Generate(QString video_file_path,
 
     //calculate header height
     int header_height = 0;
+    const int text_padding = profile.ImageWidth * 0.005;
     if(profile.HeaderType)
     {
-        const int line_height = static_cast<int>(profile.HeaderFont.pointSize() * 2);
-        header_height = HEADER_TEXT_PAD + HEADER_LINES_COUNT * line_height + 3 * HEADER_TEXT_PAD;
+        std::unique_ptr<QPixmap> Pixmap(new QPixmap{profile.ImageWidth, 100});
+        std::unique_ptr<QPainter> Painter(new QPainter{Pixmap.get()});
+        QRect rect;
+        QRect bounds;
+        QString sample_text("line1\nline2\nline3\nline4");
+        Painter->drawText(rect, 0, sample_text, &bounds);
+        header_height = text_padding + bounds.height() + text_padding;
     }
 
     //grid
@@ -169,7 +164,7 @@ int CGenerator::Generate(QString video_file_path,
     const int out_frame_height = out_frame_width / aspect_ration;
     const int output_height = header_height + out_frame_height * profile.GridRows;
 
-    //TODO:
+    //graphics
     std::unique_ptr<QPixmap> Pixmap(new QPixmap{profile.ImageWidth, output_height});
     std::unique_ptr<QPainter> Painter(new QPainter{Pixmap.get()});
 
@@ -192,10 +187,10 @@ int CGenerator::Generate(QString video_file_path,
         text_options.setWrapMode(QTextOption::NoWrap);
         Painter->setFont(profile.HeaderFont);
         Painter->setPen(QPen{QColor(profile.HeaderFontColor)});
-        Painter->drawText(QRectF{HEADER_TEXT_PAD, HEADER_TEXT_PAD,
-                                 static_cast<qreal>(profile.ImageWidth),
-                                 static_cast<qreal>(header_height)},
-                                 header_text.c_str(), text_options);
+        Painter->drawText(QRect{text_padding, 0,
+                                profile.ImageWidth,
+                                header_height},
+                                header_text.c_str(), text_options);
     }
 
     //write frames grid
@@ -203,6 +198,7 @@ int CGenerator::Generate(QString video_file_path,
     const qint64 interval = duration / (frame_count + 1);
     qint64 current_position = interval;
     int frame_index = 0;
+    const Qt::Alignment timestamp_alignment = GetTimastampAlignment(profile.Timestamp);
     Painter->setBackgroundMode(Qt::TransparentMode);
     for (int y = 0; y < profile.GridRows; ++y)
     {
@@ -226,26 +222,27 @@ int CGenerator::Generate(QString video_file_path,
             {
                 std::string timestamp_text = GetDurationString(current_position);
                 QTextOption timestamp_text_options;
-                timestamp_text_options.setAlignment(GetTimastampAlignment(profile.Timestamp));
+                timestamp_text_options.setAlignment(timestamp_alignment);
                 timestamp_text_options.setWrapMode(QTextOption::NoWrap);
                 Painter->setFont(profile.TimestampFont);
 
                 //draw shadow
                 constexpr int TIMESTAMP_SHADOW_SHIFT = 2;
                 const QColor shadow_color{0,0,0};
+                QRect timestamp_rect = frame_rect.adjusted(text_padding, text_padding, -text_padding, -text_padding);
                 Painter->setPen(QPen{QColor(shadow_color)});
-                Painter->drawText(QRect{frame_rect.left() + TIMESTAMP_SHADOW_SHIFT,
-                                        frame_rect.top() + TIMESTAMP_SHADOW_SHIFT,
-                                        frame_rect.width(),
-                                        frame_rect.height()},
+                Painter->drawText(QRect{timestamp_rect.left() + TIMESTAMP_SHADOW_SHIFT,
+                                        timestamp_rect.top() + TIMESTAMP_SHADOW_SHIFT,
+                                        timestamp_rect.width(),
+                                        timestamp_rect.height()},
                                         timestamp_text.c_str(), timestamp_text_options);
 
                 //draw Timestamp
                 Painter->setPen(QPen{QColor(profile.TimestampFontColor)});
-                Painter->drawText(QRect{frame_rect.left(),
-                                        frame_rect.top(),
-                                        frame_rect.width(),
-                                        frame_rect.height()},
+                Painter->drawText(QRect{timestamp_rect.left(),
+                                        timestamp_rect.top(),
+                                        timestamp_rect.width(),
+                                        timestamp_rect.height()},
                                         timestamp_text.c_str(), timestamp_text_options);
             }
 
@@ -265,7 +262,6 @@ int CGenerator::Generate(QString video_file_path,
         result_string = "Unable to save file: " + output_file_path;
         return RESULT_FAILED;
     }
-
 
     if(event_callback)
         event_callback->SetProgress(100);

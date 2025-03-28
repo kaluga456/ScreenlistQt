@@ -9,52 +9,18 @@ using namespace sl;
 
 //header painter
 constexpr int HEADER_VERTICAL_PADDING = 5; //vertical padding, px
-constexpr int HEADER_LINES_COUNT = 4;
 
 constexpr int SIGNAL_WAIT_TIMEOUT = 3000;
 CVideoFile::CVideoFile(QString video_file_path) :
     MediaPlayer{nullptr},
     VideoSink{nullptr}
 {
-    Open(video_file_path);
-}
-
-CVideoFile::~CVideoFile()
-{
-    Close();
-}
-void CVideoFile::errorOccurred(QMediaPlayer::Error error, const QString &errorString)
-{
-    qDebug() << "errorOccurred: " << errorString;
-}
-void CVideoFile::errorChanged()
-{
-    qDebug() << "errorChanged";
-}
-void CVideoFile::mediaStatusChanged(QMediaPlayer::MediaStatus status)
-{
-    qDebug() << "mediaStatusChanged: " << status;
-}
-void CVideoFile::positionChanged(qint64 position)
-{
-    //qDebug() << "positionChanged" << position;
-}
-QString CVideoFile::GetFileName() const
-{
-    if(FilePath.isEmpty())
-        return SAMPLE_FRAME_NAME;
-
-    QDir relative_name(FilePath);
-    return relative_name.dirName();
-};
-int CVideoFile::Open(QString video_file_path)
-{
-    Close();
+    //profile preview
     if(video_file_path.isEmpty())
     {
         Image = QImage(SAMPLE_FRAME_RES_NAME);
         SL_VERIFY(false == Image.isNull());
-        return 0;
+        return;
     }
 
     //video file
@@ -88,18 +54,37 @@ int CVideoFile::Open(QString video_file_path)
     FrameHeight = video_frame.height();
 
     FilePath = video_file_path;
-    return 0;
 }
 
-void CVideoFile::Close()
+CVideoFile::~CVideoFile()
 {
     delete VideoSink;
-    VideoSink = nullptr;
-
     delete MediaPlayer;
-    MediaPlayer = nullptr;
-
 }
+void CVideoFile::errorOccurred(QMediaPlayer::Error error, const QString &errorString)
+{
+    qDebug() << "errorOccurred: " << errorString;
+}
+void CVideoFile::errorChanged()
+{
+    qDebug() << "errorChanged";
+}
+void CVideoFile::mediaStatusChanged(QMediaPlayer::MediaStatus status)
+{
+    qDebug() << "mediaStatusChanged: " << status;
+}
+void CVideoFile::positionChanged(qint64 position)
+{
+    //qDebug() << "positionChanged" << position;
+}
+QString CVideoFile::GetFileName() const
+{
+    if(FilePath.isEmpty())
+        return SAMPLE_FRAME_NAME;
+
+    QDir relative_name(FilePath);
+    return relative_name.dirName();
+};
 QString CVideoFile::GetFilePath() const
 {
     return MediaPlayer ? FilePath : SAMPLE_FRAME_NAME;
