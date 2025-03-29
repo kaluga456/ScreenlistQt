@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -27,11 +28,6 @@ MainWindow::MainWindow(QWidget *parent) :
     VideoItemList(this)
 {
     ui->setupUi(this);
-
-    //TEST:
-    VideoItemList.Add("d:/video/test/data.mp4");
-    // VideoItemList.Add("d:/video/test/5.mp4");
-    // VideoItemList.Add("d:/video/test/C1.mp4");
 
     //init header view
     const QFont table_view_font = ui->tableView->font();
@@ -52,12 +48,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->verticalHeader()->setDefaultSectionSize(table_view_font.pointSize());
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-
-    //TODO:
     ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-
-    //TODO: init controls
-    UpdateOutputDirs(Settings.LastOutputDir);
 
     //header combo
     HeaderModel.addItem("Disabled", sl::HEADER_DISABLED);
@@ -79,16 +70,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //init profiles
     ProfileModel.Load();
-    ui->cbProfiles->setModel(&ProfileModel);
-
-    //TODO: read from settings
     const int row = ProfileModel.getProfileRow(Settings.ProfileName);
+    ui->cbProfiles->setModel(&ProfileModel);
     ui->cbProfiles->setCurrentIndex(row);
     UpdateProfileView();
+
+    UpdateOutputDirs(Settings.LastOutputDir);
 
     //main menu actions
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::onAddFiles);
     connect(ui->actionAddFolder, &QAction::triggered, this, &MainWindow::onAddFolder);
+    connect(ui->actionRemoveSelected, &QAction::triggered, this, &MainWindow::onRemoveSelected);
     connect(ui->actionRemoveFailed, &QAction::triggered, this, &MainWindow::onRemoveFailed);
     connect(ui->actionRemoveCompleted, &QAction::triggered, this, &MainWindow::onRemoveCompleted);
     connect(ui->actionRemoveAll, &QAction::triggered, this, &MainWindow::onRemoveAll);
@@ -101,9 +93,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->actionGitHub, &QAction::triggered, this, &MainWindow::onGitHub);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
-
-    //context menu actions
     connect(ui->actionProcessAll, &QAction::triggered, this, &MainWindow::onStartProcessing);
+    connect(ui->actionOpenVideo, &QAction::triggered, this, &MainWindow::onOpenVideo);
+    connect(ui->actionOpenPreview, &QAction::triggered, this, &MainWindow::onOpenPreview);
+    connect(ui->actionBrowseToVideo, &QAction::triggered, this, &MainWindow::onBrowseToVideo);
+    connect(ui->actionBrowseToPreview, &QAction::triggered, this, &MainWindow::onBrowseToPreview);
+    connect(ui->actionResetSelected, &QAction::triggered, this, &MainWindow::onResetSelected);
+    connect(ui->actionResetAll, &QAction::triggered, this, &MainWindow::onResetAll);
 
     //button events
     connect(ui->pbHeaderFont, &QPushButton::clicked, this, &MainWindow::onHeaderFont);
@@ -121,7 +117,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->tableView, &QTableView::customContextMenuRequested, this, &MainWindow::contextMenuVideoList);
     connect(ui->tableView, &QTableView::doubleClicked, this, &MainWindow::doubleClickedVideoList);
 
+    //main window
+    setWindowIcon(QIcon(":/res/main_icon.ico"));
     setWindowTitle(APP_FULL_NAME);
+
+    SwitchState(PROCESS_NONE);
 }
 MainWindow::~MainWindow()
 {
@@ -169,19 +169,24 @@ void MainWindow::onAddFolder()
 }
 void MainWindow::onRemoveSelected()
 {
-    //TODO:
+    //TODO: prompt for CurrentVideo
+    QItemSelectionModel* ism = ui->tableView->selectionModel();
+    VideoItemList.RemoveSelected(ism);
 }
 void MainWindow::onRemoveFailed()
 {
-    //TODO:
+    //TODO: prompt for CurrentVideo
+    VideoItemList.RemoveFailed();
 }
 void MainWindow::onRemoveCompleted()
 {
-    //TODO:
+    //TODO: prompt for CurrentVideo
+    VideoItemList.RemoveCompleted();
 }
 void MainWindow::onRemoveAll()
 {
-    //TODO:
+    //TODO: prompt for CurrentVideo
+    VideoItemList.RemoveAll();
 }
 void MainWindow::sectionClicked(int logicalIndex)
 {
@@ -209,6 +214,8 @@ void MainWindow::contextMenuVideoList(const QPoint &pos)
     QItemSelectionModel* ism = ui->tableView->selectionModel();
     QModelIndex mi = ism->currentIndex();
     PVideoItem focused_video = VideoItemList.Get(mi);
+    const bool has_focus = (focused_video != nullptr);
+    const bool has_selection = ism->hasSelection();
 
     QPoint rel_pos;
     rel_pos = ui->tableView->mapToGlobal(pos);
@@ -216,10 +223,31 @@ void MainWindow::contextMenuVideoList(const QPoint &pos)
 
     //TODO:
     QMenu menu(this);
+    if(has_focus)
+    {
+        menu.addAction(ui->actionOpenVideo);
+        menu.addAction(ui->actionOpenPreview);
+        menu.addSeparator();
+        menu.addAction(ui->actionBrowseToVideo);
+        menu.addAction(ui->actionBrowseToPreview);
+        menu.addSeparator();
+    }
     menu.addAction(ui->actionAddFiles);
     menu.addAction(ui->actionAddFolder);
     menu.addSeparator();
+    if(has_selection)
+        menu.addAction(ui->actionProcessSelected);
     menu.addAction(ui->actionProcessAll);
+    menu.addSeparator();
+    if(has_selection)
+        menu.addAction(ui->actionResetSelected);
+    menu.addAction(ui->actionResetAll);
+    menu.addSeparator();
+    if(has_selection)
+        menu.addAction(ui->actionRemoveSelected);
+    menu.addAction(ui->actionRemoveCompleted);
+    menu.addAction(ui->actionRemoveFailed);
+    menu.addAction(ui->actionRemoveAll);
     menu.exec(rel_pos);
 }
 PVideoItem MainWindow::GetVideoToProcess()
@@ -239,7 +267,7 @@ PVideoItem MainWindow::GetVideoToProcess()
         return video;
     }
 
-    ProcessingState = PROCESS_NONE;
+    SwitchState(PROCESS_NONE);
     return nullptr;
 }
 void MainWindow::onStartProcessing()
@@ -248,7 +276,7 @@ void MainWindow::onStartProcessing()
         return;
 
     //TODO: PROCESS_SELECTED
-    ProcessingState = PROCESS_ALL;
+    SwitchState(PROCESS_ALL);
     PVideoItem video_item = GetVideoToProcess();
     if(nullptr == video_item)
         return;
@@ -260,42 +288,48 @@ void MainWindow::onStartProcessing()
     sl::COptions options;
     options.OverwriteFiles = true;
     options.OutputPath = ui->cbOutputDir->currentIndex() ? ui->cbOutputDir->currentText() : "";
-    CurrentVideo = video_item;
+    VideoItemList.CurrentVideo = video_item;
     GeneratorThread.Start(video_item, profile, options);
 }
 void MainWindow::onStopProcessing()
 {
-    ProcessingState = PROCESS_NONE;
     GeneratorThread.Stop();
+    SwitchState(PROCESS_NONE);
 }
 void MainWindow::threadNotify(int progress)
 {
-    Q_ASSERT(CurrentVideo);
-    if(CurrentVideo)
-        CurrentVideo->State = progress;
+    Q_ASSERT(VideoItemList.CurrentVideo);
+    if(VideoItemList.CurrentVideo)
+        VideoItemList.CurrentVideo->State = progress;
 
-    VideoItemList.Update(CurrentVideo.get(), false);
+    VideoItemList.Update(VideoItemList.CurrentVideo.get(), false);
 }
 void MainWindow::threadFinished(int result, const QString &result_string)
 {
-    if(nullptr == CurrentVideo)
+    if(nullptr == VideoItemList.CurrentVideo)
+    {
+        Q_ASSERT(0);
         return;
+    }
 
-    CurrentVideo->State = result;
-    CurrentVideo->ResultString = result_string;
-    VideoItemList.Update(CurrentVideo.get());
+    VideoItemList.CurrentVideo->State = result;
+    VideoItemList.CurrentVideo->ResultString = result_string;
+    VideoItemList.Update(VideoItemList.CurrentVideo.get());
 
     if(PROCESS_NONE == ProcessingState)
         return;
 
     PVideoItem video_item = GetVideoToProcess();
     if(nullptr == video_item)
+    {
+        SwitchState(PROCESS_NONE);
         return;
+    }
 
     GeneratorThread.Stop();
     PProfile profile = GetCurrentProfile();
     sl::COptions options;
-    CurrentVideo = video_item;
+    VideoItemList.CurrentVideo = video_item;
     GeneratorThread.Start(video_item, profile, options);
 }
 
@@ -311,7 +345,9 @@ void MainWindow::SaveSettings()
     qs.setValue("MainWindowGeometry", saveGeometry());
     qs.setValue("MainWindowState", saveState());
 
+    //profiles
     qs.setValue("Profile", Settings.ProfileName);
+    ProfileModel.Save();
 
     //output dirs
     qs.setValue("LastOutputDir", ui->cbOutputDir->currentIndex());
@@ -325,6 +361,9 @@ void MainWindow::SaveSettings()
         qs.setValue("dir", *dir_i);
     }
     qs.endArray();
+
+    //video list
+    VideoItemList.Save();
 }
 
 void MainWindow::LoadSettings()
@@ -352,6 +391,9 @@ void MainWindow::LoadSettings()
         Settings.OutputDirs.Add(dir);
     }
     qs.endArray();
+
+    //video list
+    VideoItemList.Load();
 }
 void MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -364,7 +406,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     Settings.ProfileName = ui->cbProfiles->currentText();
     SaveSettings();
-    ProfileModel.Save();
 
     if(event)
         QWidget::closeEvent(event);
@@ -507,6 +548,30 @@ void MainWindow::onAbout()
     dlg.setStandardButtons(QMessageBox::Ok);
     dlg.exec();
 }
+void MainWindow::onOpenVideo()
+{
+    //TODO:
+}
+void MainWindow::onOpenPreview()
+{
+    //TODO:
+}
+void MainWindow::onBrowseToVideo()
+{
+    //TODO:
+}
+void MainWindow::onBrowseToPreview()
+{
+    //TODO:
+}
+void MainWindow::onResetSelected()
+{
+    VideoItemList.ResetSelected(ui->tableView->selectionModel());
+}
+void MainWindow::onResetAll()
+{
+    VideoItemList.ResetAll();
+}
 void MainWindow::onHeaderFont()
 {
     bool ok = false;
@@ -525,11 +590,20 @@ void MainWindow::onTimestampFont()
 }
 void MainWindow::onOutputPath()
 {
-    QString dir = QFileDialog::getExistingDirectory(this, "Select directory for output files");
-    if(dir.isEmpty())
+    QFileDialog dlg;
+    dlg.setAcceptMode(QFileDialog::AcceptOpen);
+    dlg.setFileMode(QFileDialog::Directory);
+    dlg.setOption(QFileDialog::ShowDirsOnly);
+    dlg.setOption(QFileDialog::DontResolveSymlinks);
+    dlg.setOption(QFileDialog::ReadOnly);
+    dlg.setLabelText(QFileDialog::LookIn, "Select directory for output files");
+    if(ui->cbOutputDir->currentIndex() > 0) dlg.setDirectory(ui->cbOutputDir->currentText());
+    dlg.exec();
+    if(dlg.result() != QDialog::Accepted)
         return;
 
-    const int item_index = Settings.OutputDirs.Add(dir);
+    QDir dir = dlg.directory();
+    const int item_index = Settings.OutputDirs.Add(dir.absolutePath());
     if(item_index < 0)
         return;
 
@@ -559,6 +633,20 @@ void MainWindow::UpdateOutputDirs(int item_index /*= -1*/)
     if(ui->cbOutputDir->count() <= item_index)
         item_index = 0;
     ui->cbOutputDir->setCurrentIndex(item_index);
+}
+
+void MainWindow::SwitchState(int state)
+{
+    if(ProcessingState == state)
+        return;
+
+    //TODO:
+    ui->actionStartProcessing->setEnabled(state == PROCESS_NONE);
+    ui->actionProcessAll->setEnabled(state == PROCESS_NONE);
+    ui->actionProcessSelected->setEnabled(state == PROCESS_NONE);
+    ui->actionStopProcessing->setEnabled(state != PROCESS_NONE);
+
+    ProcessingState = state;
 }
 void MainWindow::ShowErrorBox(QString error_text)
 {

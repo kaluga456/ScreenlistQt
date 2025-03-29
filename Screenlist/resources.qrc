@@ -12,5 +12,6 @@
         <file>res/start.svg</file>
         <file>res/stop.svg</file>
         <file>res/sample_frame.jpg</file>
+        <file>res/main_icon.ico</file>
     </qresource>
 </RCC>

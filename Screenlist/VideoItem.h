@@ -10,9 +10,11 @@ enum
     PIS_MIN_PROCESSING = 0,
     PIS_MAX_PROCESSING = 100,
 
-    PIS_WAIT,                  //ready to process
-    PIS_DONE,                  //processed successfully
-    PIS_FAILED                 //processed with error
+    PIS_WAIT, //ready to process
+    PIS_DONE, //processed successfully
+    PIS_FAILED, //processed with error
+
+    PIS_SELECTED //for removal from list
 };
 
 QString GetStateString(int item_state);

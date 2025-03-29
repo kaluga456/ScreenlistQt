@@ -43,6 +43,12 @@ private slots:
     void onSettings();
     void onGitHub();
     void onAbout();
+    void onOpenVideo();
+    void onOpenPreview();
+    void onBrowseToVideo();
+    void onBrowseToPreview();
+    void onResetSelected();
+    void onResetAll();
 
     //buttons
     void onHeaderFont();
@@ -74,12 +80,13 @@ private:
         PROCESS_NONE,
         PROCESS_ALL,
         PROCESS_SELECTED
-    } ProcessingState{PROCESS_NONE};
+    };
+    int ProcessingState{PROCESS_NONE};
     CGeneratorThread GeneratorThread;
     PVideoItem GetVideoToProcess();
 
     //video items list
-    PVideoItem CurrentVideo;
+    //PVideoItem CurrentVideo;
     QHeaderView HeaderView;
     CVideoItemModel VideoItemList;
 
@@ -105,5 +112,6 @@ private:
 
     //controls
     void UpdateOutputDirs(int item_index = -1);
+    void SwitchState(int state); //arg - PROCESS_ values
 };
 #endif // MAINWINDOW_H

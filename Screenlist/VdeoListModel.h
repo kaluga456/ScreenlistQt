@@ -34,9 +34,17 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
-    //
+    //add
     void Add(QString vide_file_path);
     void Add(const QStringList& file_names);
+
+    //remove
+    void RemoveFailed();
+    void RemoveSelected(QItemSelectionModel* sm);
+    void RemoveCompleted();
+    void RemoveAll();
+    void ResetSelected(QItemSelectionModel* sm);
+    void ResetAll();
 
     //access
     PVideoItem Get(const QModelIndex &index);
@@ -48,8 +56,17 @@ public:
     //
     void Update(CVideoItem* video_item, bool full = true);
 
+    //serialization
+    void Load();
+    void Save();
+
+    //currently processing item
+    PVideoItem CurrentVideo;
+
 private:
     CVideoItems Items;
+
+    void Add(PVideoItem item); //for loading from file
 };
 
 #endif // VDEOLISTMODEL_H

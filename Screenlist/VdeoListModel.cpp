@@ -1,4 +1,10 @@
+#include <QFile>
+#include <QDataStream>
+#include <QCoreApplication>
+#include <QItemSelectionModel>
 #include "VdeoListModel.h"
+
+constexpr const char* VIDEO_LIST_FILE_NAME = "/list.dat";
 
 CVideoItemModel::CVideoItemModel(QObject* parent) : QAbstractItemModel(parent)
 {
@@ -83,13 +89,98 @@ void CVideoItemModel::Add(QString vide_file_path)
         if(0 == video_item->VideoFilePath.compare(vide_file_path))
             return;
     }
-    Items.push_back(PVideoItem(new CVideoItem(vide_file_path)));
+    PVideoItem new_item(new CVideoItem(vide_file_path));
+    Items.push_back(new_item);
 }
 void CVideoItemModel::Add(const QStringList &file_names)
 {
     beginResetModel();
     for(const auto& file_name : file_names)
         Add(file_name);
+    endResetModel();
+}
+void CVideoItemModel::RemoveFailed()
+{
+    beginResetModel();
+    for(auto item_i = Items.begin(); item_i != Items.end();)
+    {
+        PVideoItem item = *item_i;
+        if(item != CurrentVideo && PIS_FAILED == item->State)
+            item_i = Items.erase(item_i);
+        else
+            ++item_i;
+    }
+    endResetModel();
+}
+void CVideoItemModel::RemoveSelected(QItemSelectionModel* sm)
+{
+    beginResetModel();
+    QItemSelection is = sm->selection();
+    QModelIndexList mil = is.indexes();
+    for(auto mi = mil.begin(); mi != mil.end(); ++mi)
+    {
+        Q_ASSERT(mi->isValid());
+        PVideoItem item = Items[mi->row()];
+        if(item == CurrentVideo)
+            continue;
+        item->State = PIS_SELECTED;
+    }
+    for(auto item_i = Items.begin(); item_i != Items.end();)
+    {
+        PVideoItem item = *item_i;
+        if(item != CurrentVideo && PIS_SELECTED == item->State)
+            item_i = Items.erase(item_i);
+        else
+            ++item_i;
+    }
+    endResetModel();
+}
+void CVideoItemModel::RemoveCompleted()
+{
+    beginResetModel();
+    for(auto item_i = Items.begin(); item_i != Items.end();)
+    {
+        PVideoItem item = *item_i;
+        if(item != CurrentVideo && PIS_DONE == item->State)
+            item_i = Items.erase(item_i);
+        else
+            ++item_i;
+    }
+    endResetModel();
+}
+void CVideoItemModel::RemoveAll()
+{
+    //TODO: CurrentVideo
+    beginResetModel();
+    Items.clear();
+    endResetModel();
+}
+void CVideoItemModel::ResetSelected(QItemSelectionModel *sm)
+{
+    beginResetModel();
+    QItemSelection is = sm->selection();
+    QModelIndexList mil = is.indexes();
+
+    for(const auto& mi : mil)
+    {
+        PVideoItem item = Items[mi.row()];
+        if(item == CurrentVideo)
+            continue;
+        item->State = PIS_WAIT;
+        item->ResultString = "";
+    }
+    endResetModel();
+}
+void CVideoItemModel::ResetAll()
+{
+    beginResetModel();
+    for(PVideoItem& item : Items)
+    {
+        if(item == CurrentVideo)
+            continue;
+        item->State = PIS_WAIT;
+        item->ResultString = "";
+    }
     endResetModel();
 }
 PVideoItem CVideoItemModel::Get(int row)
@@ -136,6 +227,65 @@ void CVideoItemModel::Update(CVideoItem *video_item, bool full /*= true*/)
         QModelIndex mi = createIndex(row, COLUMN_RESULT);
         QList<int>roles{Qt::DisplayRole};
         emit dataChanged(mi, mi, roles);
+    }
+}
+void CVideoItemModel::Add(PVideoItem item)
+{
+    Q_ASSERT(item);
+    Items.push_back(item);
+}
+void CVideoItemModel::Load()
+{
+    beginResetModel();
+    Items.clear();
+
+    QString list_file_name = QCoreApplication::applicationDirPath() + VIDEO_LIST_FILE_NAME;
+    QFile list_file(list_file_name);
+    if(false == list_file.open(QIODevice::ReadOnly))
+    {
+        endResetModel();
+        return;
+    }
+
+    QDataStream stream(&list_file);
+    quint32 size{0};
+    stream >> size;
+
+    QString input_name;
+    int State{PIS_WAIT};
+    QString result_string;
+    for(int row = 0; row < size; ++row)
+    {
+        stream >> input_name;
+        stream >> State;
+        stream >> result_string;
+
+        PVideoItem video_item(new CVideoItem(input_name));
+        video_item->State = State;
+        video_item->ResultString = result_string;
+        Add(video_item);
+    }
+
+    endResetModel();
+}
+
+void CVideoItemModel::Save()
+{
+    QString list_file_name = QCoreApplication::applicationDirPath() + VIDEO_LIST_FILE_NAME;
+    QFile list_file(list_file_name);
+    if(false == list_file.open(QIODevice::WriteOnly))
+    {
+        Q_ASSERT(0);
+        return;
+    }
+
+    QDataStream stream(&list_file);
+    stream << static_cast<quint32>(Items.size());
+    for(const PVideoItem& item : Items)
+    {
+        stream << item->VideoFilePath;
+        stream << item->State;
+        stream << item->ResultString;
     }
 }
 PVideoItem CVideoItemModel::Get(const QModelIndex &index)

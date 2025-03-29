@@ -8,7 +8,7 @@
 #include "VideoItem.h"
 
 #ifdef _DEBUG
-    //#define SHALLOW_PROCESSING
+    #define SHALLOW_PROCESSING
 #endif
 
 class CGeneratorThread : public QThread, public sl::IEventCallback

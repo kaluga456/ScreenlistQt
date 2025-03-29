@@ -52,16 +52,14 @@ int CGeneratorThread::generate(QString& result_string)
 {
     return sl::generate(VideoFilePath, Profile, Options, result_string, this);
 }
-
 int CGeneratorThread::shallow_proc(QString& result_string)
 {
     for(int i = 1; i <= 10; ++i)
     {
         if(IsTerminate())
         {
-            qDebug() << "CGeneratorThread isInterruptionRequested()";
             result_string = "<shallow_proc() terminated>";
-            return PIS_FAILED;
+            return sl::RESULT_TERMINATED;
         }
 
         QThread::msleep(500);
@@ -69,14 +67,12 @@ int CGeneratorThread::shallow_proc(QString& result_string)
     }
 
     result_string = "<shallow_proc() success>";
-    return PIS_DONE;
+    return sl::RESULT_SUCCESS;
 }
-
 bool CGeneratorThread::IsTerminate() const
 {
     return isInterruptionRequested();
 }
-
 void CGeneratorThread::SetProgress(int progress)
 {
     emit threadNotify(progress);
