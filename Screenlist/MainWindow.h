@@ -40,6 +40,8 @@ private slots:
     void onProfileSave();
     void onProfileDelete();
     void onProfilePreview();
+    void onShowFullPath(bool checked);
+    void onOverwriteFiles(bool checked);
     void onSettings();
     void onGitHub();
     void onAbout();
@@ -53,7 +55,8 @@ private slots:
     //buttons
     void onHeaderFont();
     void onTimestampFont();
-    void onOutputPath();
+    void onAddOutputDir();
+    void onOpenOutputDir();
 
     //combo boxes
     void onProfileChanged(int index);
@@ -89,6 +92,7 @@ private:
     //PVideoItem CurrentVideo;
     QHeaderView HeaderView;
     CVideoItemModel VideoItemList;
+    PVideoItem GetFocusedVideo();
 
     //combo boxes
     CStrIntModel HeaderModel;
@@ -109,9 +113,12 @@ private:
 
     //overrides
     void closeEvent(QCloseEvent *event) override;
+    //void dropEvent(QDropEvent *event) override;
 
     //controls
     void UpdateOutputDirs(int item_index = -1);
     void SwitchState(int state); //arg - PROCESS_ values
+
+    bool OpenURL(QString url);
 };
 #endif // MAINWINDOW_H

@@ -39,6 +39,10 @@ MainWindow::MainWindow(QWidget *parent) :
     HeaderView.setStretchLastSection(true);
     LoadSettings();
 
+    //settings
+    ui->actionShowFullPath->setChecked(Settings.ShowFullPath);
+    ui->actionOverwriteFiles->setChecked(Settings.OverwriteFiles);
+
     //init table view
     ui->tableView->setHorizontalHeader(&HeaderView);
     ui->tableView->setModel(&VideoItemList);
@@ -49,6 +53,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    ui->tableView->setDragDropMode(QAbstractItemView::DragDrop);
+    ui->tableView->setAcceptDrops(true);
+    ui->tableView->setDropIndicatorShown(true);
+    ui->tableView->setDefaultDropAction(Qt::CopyAction);
+    ui->tableView->setDragDropOverwriteMode(false);
+
+    //TEST:
+    //ui->tableView->setDragEnabled(false); //disabled for table view items
+    ui->tableView->setDragEnabled(true);
+
+    ui->tableView->viewport()->setAcceptDrops(true);
+    //qDebug() << VideoItemList.mimeTypes();
 
     //header combo
     HeaderModel.addItem("Disabled", sl::HEADER_DISABLED);
@@ -69,7 +85,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->cbTimestamp->setModel(&TimestampModel);
 
     //init profiles
-    ProfileModel.Load();
     const int row = ProfileModel.getProfileRow(Settings.ProfileName);
     ui->cbProfiles->setModel(&ProfileModel);
     ui->cbProfiles->setCurrentIndex(row);
@@ -77,7 +92,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     UpdateOutputDirs(Settings.LastOutputDir);
 
-    //main menu actions
+    //actions
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::onAddFiles);
     connect(ui->actionAddFolder, &QAction::triggered, this, &MainWindow::onAddFolder);
     connect(ui->actionRemoveSelected, &QAction::triggered, this, &MainWindow::onRemoveSelected);
@@ -90,6 +105,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionProfileSave, &QAction::triggered, this, &MainWindow::onProfileSave);
     connect(ui->actionProfileDelete, &QAction::triggered, this, &MainWindow::onProfileDelete);
     connect(ui->actionProfilePreview, &QAction::triggered, this, &MainWindow::onProfilePreview);
+    connect(ui->actionShowFullPath, &QAction::toggled, this, &MainWindow::onShowFullPath);
+    connect(ui->actionOverwriteFiles, &QAction::toggled, this, &MainWindow::onOverwriteFiles);
     connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->actionGitHub, &QAction::triggered, this, &MainWindow::onGitHub);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
@@ -104,7 +121,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //button events
     connect(ui->pbHeaderFont, &QPushButton::clicked, this, &MainWindow::onHeaderFont);
     connect(ui->pbTimestampFont, &QPushButton::clicked, this, &MainWindow::onTimestampFont);
-    connect(ui->pbOutputPath, &QPushButton::clicked, this, &MainWindow::onOutputPath);
+    connect(ui->pbAddOutputDir, &QPushButton::clicked, this, &MainWindow::onAddOutputDir);
+    connect(ui->pbOpenOutputDir, &QPushButton::clicked, this, &MainWindow::onOpenOutputDir);
 
     //processing thread events
     connect(&GeneratorThread, &CGeneratorThread::threadNotify, this, &MainWindow::threadNotify);
@@ -133,7 +151,7 @@ void MainWindow::onAddFiles()
     fd.setFileMode(QFileDialog::ExistingFiles);
     fd.setAcceptMode(QFileDialog::AcceptOpen);
     fd.setLabelText(QFileDialog::LookIn, "Select video files for processing");
-    fd.setNameFilter(FILE_DIALOG_FILTER);
+    fd.setNameFilter(Settings.GetFileDialogFilter());
 
     QStringList fileNames;
     if(fd.exec())
@@ -202,11 +220,11 @@ void MainWindow::doubleClickedVideoList(const QModelIndex &index)
         return;
 
     if(CVideoItemModel::COLUMN_VIDEO == index.column())
-        QDesktopServices::openUrl(QUrl(video_item->VideoFilePath, QUrl::TolerantMode));
+        OpenURL(video_item->VideoFilePath);
     else if(CVideoItemModel::COLUMN_RESULT == index.column())
     {
         if(PIS_DONE == video_item->State)
-            QDesktopServices::openUrl(QUrl(video_item->ResultString, QUrl::TolerantMode));
+            OpenURL(video_item->ResultString);
     }
 }
 void MainWindow::contextMenuVideoList(const QPoint &pos)
@@ -214,22 +232,22 @@ void MainWindow::contextMenuVideoList(const QPoint &pos)
     QItemSelectionModel* ism = ui->tableView->selectionModel();
     QModelIndex mi = ism->currentIndex();
     PVideoItem focused_video = VideoItemList.Get(mi);
-    const bool has_focus = (focused_video != nullptr);
     const bool has_selection = ism->hasSelection();
 
     QPoint rel_pos;
     rel_pos = ui->tableView->mapToGlobal(pos);
     rel_pos.ry() += ui->tableView->horizontalHeader()->height();
 
-    //TODO:
     QMenu menu(this);
-    if(has_focus)
+    if(focused_video)
     {
         menu.addAction(ui->actionOpenVideo);
-        menu.addAction(ui->actionOpenPreview);
+        if(focused_video->State == PIS_DONE)
+            menu.addAction(ui->actionOpenPreview);
         menu.addSeparator();
         menu.addAction(ui->actionBrowseToVideo);
-        menu.addAction(ui->actionBrowseToPreview);
+        if(focused_video->State == PIS_DONE)
+            menu.addAction(ui->actionBrowseToPreview);
         menu.addSeparator();
     }
     menu.addAction(ui->actionAddFiles);
@@ -269,6 +287,12 @@ PVideoItem MainWindow::GetVideoToProcess()
 
     SwitchState(PROCESS_NONE);
     return nullptr;
+}
+PVideoItem MainWindow::GetFocusedVideo()
+{
+    QItemSelectionModel* ism = ui->tableView->selectionModel();
+    QModelIndex mi = ism->currentIndex();
+    return VideoItemList.Get(mi);
 }
 void MainWindow::onStartProcessing()
 {
@@ -332,11 +356,11 @@ void MainWindow::threadFinished(int result, const QString &result_string)
     VideoItemList.CurrentVideo = video_item;
     GeneratorThread.Start(video_item, profile, options);
 }
-
 void MainWindow::SaveSettings()
 {
     QSettings qs;
 
+    qs.setValue("ShowFullPath", Settings.ShowFullPath);
     qs.setValue("OverwriteFiles", Settings.OverwriteFiles);
 
     qs.setValue("HeaderState", HeaderView.saveState());
@@ -350,26 +374,17 @@ void MainWindow::SaveSettings()
     ProfileModel.Save();
 
     //output dirs
+    Settings.OutputDirs.Save();
     qs.setValue("LastOutputDir", ui->cbOutputDir->currentIndex());
-    qs.beginWriteArray("OutputDirs");
-    QStringList::const_iterator dir_i = Settings.OutputDirs.begin();
-    ++dir_i;
-    int index = 0;
-    for(; dir_i != Settings.OutputDirs.end(); ++dir_i, ++index)
-    {
-        qs.setArrayIndex(index);
-        qs.setValue("dir", *dir_i);
-    }
-    qs.endArray();
 
     //video list
     VideoItemList.Save();
 }
-
 void MainWindow::LoadSettings()
 {
     QSettings qs;
 
+    Settings.ShowFullPath = qs.value("ShowFullPath").toBool();
     Settings.OverwriteFiles = qs.value("OverwriteFiles").toBool();
 
     HeaderView.restoreState(qs.value("HeaderState").toByteArray());
@@ -378,19 +393,14 @@ void MainWindow::LoadSettings()
     restoreGeometry(qs.value("MainWindowGeometry").toByteArray());
     restoreState(qs.value("MainWindowState").toByteArray());
 
+    //profiles
     Settings.ProfileName = qs.value("Profile").toString();
+    ProfileModel.Load();
 
     //output dirs
+    Settings.OutputDirs.Load();
     Settings.LastOutputDir = qs.value("LastOutputDir").toInt();
-    qs.setValue("LastOutputDir", ui->cbOutputDir->currentIndex());
-    const int size = std::max(qs.beginReadArray("OutputDirs"), COutputDirList::MAX_OUTPUT_DIRS);
-    for (int i = 0; i < size && i < COutputDirList::MAX_OUTPUT_DIRS; ++i)
-    {
-        qs.setArrayIndex(i);
-        QString dir = qs.value("dir").toString();
-        Settings.OutputDirs.Add(dir);
-    }
-    qs.endArray();
+    ui->cbOutputDir->setCurrentIndex(Settings.LastOutputDir);
 
     //video list
     VideoItemList.Load();
@@ -412,6 +422,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
     else
         QApplication::exit(0);
 }
+// void MainWindow::dropEvent(QDropEvent *event)
+// {
+//     qDebug() << " MainWindow::dropEvent()";
+// }
 void MainWindow::onExit()
 {
     closeEvent(nullptr);
@@ -525,19 +539,36 @@ void MainWindow::onProfilePreview()
         return;
     }
     QString file_path = options.OutputPath + "//" + sl::PREVIEW_FILE_NAME;
-    if(false == QDesktopServices::openUrl(QUrl(file_path, QUrl::TolerantMode)))
+    if(false == OpenURL(file_path))
     {
         ShowErrorBox("Can`t open preview image\n" + file_path);
         return;
     }
 }
+void MainWindow::onShowFullPath(bool checked)
+{
+    emit VideoItemList.layoutAboutToBeChanged();
+    Settings.ShowFullPath = checked;
+    emit VideoItemList.layoutChanged();
+}
+void MainWindow::onOverwriteFiles(bool checked)
+{
+    Settings.OverwriteFiles = checked;
+}
 void MainWindow::onSettings()
 {
     //TODO:
+    //dir.cdUp();
+    //qDebug() << dir.dirName();
+    //TEST:
+    // QDir dir("d:/video/test/data.mp4");
+    // dir.cdUp();
+    // qDebug() << dir.absolutePath();
+    // qDebug() << dir.relativeFilePath("d:/video/test/data.mp4");
 }
 void MainWindow::onGitHub()
 {
-    QDesktopServices::openUrl(QUrl(APP_URL, QUrl::TolerantMode));
+    OpenURL(APP_URL);
 }
 void MainWindow::onAbout()
 {
@@ -550,19 +581,37 @@ void MainWindow::onAbout()
 }
 void MainWindow::onOpenVideo()
 {
-    //TODO:
+    PVideoItem video = GetFocusedVideo();
+    if(nullptr == video)
+        return;
+    OpenURL(video->VideoFilePath);
 }
 void MainWindow::onOpenPreview()
 {
-    //TODO:
+    PVideoItem video = GetFocusedVideo();
+    if(nullptr == video || video->State != PIS_DONE)
+        return;
+    OpenURL(video->ResultString);
 }
 void MainWindow::onBrowseToVideo()
 {
-    //TODO:
+    PVideoItem video = GetFocusedVideo();
+    if(nullptr == video)
+        return;
+
+    QDir dir(video->VideoFilePath);
+    dir.cdUp();
+    OpenURL(dir.absolutePath());
 }
 void MainWindow::onBrowseToPreview()
 {
-    //TODO:
+    PVideoItem video = GetFocusedVideo();
+    if(nullptr == video || video->State != PIS_DONE)
+        return;
+
+    QDir dir(video->ResultString);
+    dir.cdUp();
+    OpenURL(dir.absolutePath());
 }
 void MainWindow::onResetSelected()
 {
@@ -588,7 +637,7 @@ void MainWindow::onTimestampFont()
         return;
     SetFontButton(ui->pbTimestampFont, font);
 }
-void MainWindow::onOutputPath()
+void MainWindow::onAddOutputDir()
 {
     QFileDialog dlg;
     dlg.setAcceptMode(QFileDialog::AcceptOpen);
@@ -608,6 +657,13 @@ void MainWindow::onOutputPath()
         return;
 
     UpdateOutputDirs(item_index);
+}
+
+void MainWindow::onOpenOutputDir()
+{
+    if(0 >= ui->cbOutputDir->currentIndex())
+        return;
+    OpenURL(ui->cbOutputDir->currentText());
 }
 void MainWindow::SetFontButton(QPushButton* button, const QFont &font)
 {
@@ -634,19 +690,29 @@ void MainWindow::UpdateOutputDirs(int item_index /*= -1*/)
         item_index = 0;
     ui->cbOutputDir->setCurrentIndex(item_index);
 }
-
 void MainWindow::SwitchState(int state)
 {
     if(ProcessingState == state)
         return;
 
+    const bool idle = (PROCESS_NONE == state);
+
     //TODO:
-    ui->actionStartProcessing->setEnabled(state == PROCESS_NONE);
-    ui->actionProcessAll->setEnabled(state == PROCESS_NONE);
-    ui->actionProcessSelected->setEnabled(state == PROCESS_NONE);
-    ui->actionStopProcessing->setEnabled(state != PROCESS_NONE);
+    ui->tableView->setEnabled(idle);
+    ui->actionStartProcessing->setEnabled(idle);
+    ui->actionProcessAll->setEnabled(idle);
+    ui->actionProcessSelected->setEnabled(idle);
+    ui->actionStopProcessing->setEnabled(!idle);
+    ui->actionRemoveSelected->setEnabled(idle);
+    ui->actionRemoveCompleted->setEnabled(idle);
+    ui->actionRemoveFailed->setEnabled(idle);
+    ui->actionRemoveAll->setEnabled(idle);
 
     ProcessingState = state;
+}
+bool MainWindow::OpenURL(QString url)
+{
+    return QDesktopServices::openUrl(QUrl(url, QUrl::TolerantMode));
 }
 void MainWindow::ShowErrorBox(QString error_text)
 {

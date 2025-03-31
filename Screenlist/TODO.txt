@@ -1,0 +1,13 @@
+TODO:
+- drag`n`drop
++ video list view
++ video list view dbl click events
+- processing thread error handling
++ context menu
+- show full path option
+- compact header draw
+- user defined header string
+- video filters
+
+NOTES:
+icons: https://fonts.google.com/icons

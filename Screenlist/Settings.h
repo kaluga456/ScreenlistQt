@@ -1,14 +1,19 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <QSettings>
 #include <QHeaderView>
 #include <QMainWindow>
-
-//video file types
-constexpr const char* FILE_DIALOG_FILTER = "Video Files (*.avi *.mkv *.mp4 *.m4v *.mp4v *.mpv4 *.hdmov *.mov *.3gp *.3gpp *.3g2 *.3gp2 *.flv *.f4v"
-                                           " ogm *.ogv *.rm *.ram *.rpm *.rmm *.rt *.rp *.smi *.smil *.wmvwmp *.wm *.asf"
-                                           " smk *.bik *.fli *.flc *.flic *.dsm *.dsv *.dsa *.dss *.ivf *.divx *.rmvb *.amv)"
-                                           ";;All Files (*.*)";
+//////////////////////////////////////////////////////////////////////////////
+template<typename T>
+class CUpdateModel
+{
+public:
+    CUpdateModel(T* model) : Model(model) {emit Model->layoutAboutToBeChanged();}
+    ~CUpdateModel() {emit Model->layoutChanged();}
+private:
+    T* Model;
+};
 //////////////////////////////////////////////////////////////////////////////
 class COutputDirList
 {
@@ -25,6 +30,10 @@ public:
     //returns added or existing dir index
     int Add(QString Dir);
 
+    //serialization
+    void Save();
+    void Load();
+
 private:
     QStringList Dirs;
 };
@@ -35,6 +44,7 @@ public:
     CSettings();
 
     bool OverwriteFiles{true};
+    bool ShowFullPath{true};
 
     //profiles
     QString ProfileName;
@@ -44,8 +54,11 @@ public:
     int LastOutputDir{0};
 
     QStringList VideoFilters;
-};
+    //TODO: QStringList::join()
 
+    QString GetFileDialogFilter() const;
+};
+//////////////////////////////////////////////////////////////////////////////
 extern CSettings Settings;
 
 #endif // SETTINGS_H

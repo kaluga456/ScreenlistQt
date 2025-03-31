@@ -1,10 +1,11 @@
 #include <QFile>
 #include <QDataStream>
 #include <QCoreApplication>
+#include "Settings.h"
 #include "ProfileList.h"
 
 //profiles file
-constexpr const char* PROFILES_FILE_NAME = "/profiles.dat";
+constexpr const char* PROFILES_FILE_NAME = "/profiles.cfg";
 constexpr quint32 PROFILES_FILE_HEADER = 0xF103A86C;
 constexpr quint32 PROFILES_FILE_VERSION = 1;
 constexpr quint32 MAX_PROFILES = 50;
@@ -90,7 +91,6 @@ void CProfileModel::setProfile(int row, PProfile profile)
 }
 int CProfileModel::addProfile(QString name, PProfile profile)
 {
-    //CResetModel reset_model(this);
     //TODO: ignore duplicates
     profile->Name = name;
     Profiles.push_back(profile);
@@ -102,7 +102,6 @@ void CProfileModel::deleteProfile(int row)
     if(row >= Profiles.size())
         return;
 
-    //CResetModel reset_model(this);
     Profiles.erase(Profiles.begin() + row);
     CurrentRow = -1;
 }
@@ -122,7 +121,6 @@ PProfile CProfileModel::getProfile(int row) const
         return PProfile();
     return Profiles[row];
 }
-
 PProfile CProfileModel::getProfile(QString name) const
 {
     for(auto& profile : Profiles)
@@ -132,7 +130,6 @@ PProfile CProfileModel::getProfile(QString name) const
     }
     return PProfile();
 }
-
 int CProfileModel::getProfileRow(QString name) const
 {
     for(int row = 0; row < Profiles.size(); ++row)
@@ -151,28 +148,42 @@ PProfile CProfileModel::getCurrentProfile() const
     Q_ASSERT(CurrentRow < Profiles.size());
     return Profiles[CurrentRow];
 }
+void CProfileModel::AddDefaultProfiles()
+{
+    PProfile def_profile(new CProfile);
+    def_profile->Name = "<default>";
+    def_profile->HeaderType = sl::HEADER_EXPANDED;
+    def_profile->GridColumns = 4;
+    def_profile->GridRows = 4;
+    def_profile->ImageWidth = 800;
+    Profiles.push_back(def_profile);
+
+    PProfile profile1(new CProfile);
+    profile1->Name = "4x4 | 1200px | hdr";
+    profile1->HeaderType = sl::HEADER_EXPANDED;
+    profile1->GridColumns = 4;
+    profile1->GridRows = 4;
+    profile1->ImageWidth = 1200;
+    Profiles.push_back(profile1);
+
+    PProfile profile2(new CProfile);
+    profile2->Name = "4x8 | 1200px | hdr";
+    profile2->HeaderType = sl::HEADER_EXPANDED;
+    profile2->GridColumns = 4;
+    profile2->GridRows = 8;
+    profile2->ImageWidth = 1200;
+    Profiles.push_back(profile2);
+}
 void CProfileModel::Load()
 {
-    //CResetModel reset_model(this);
+    CUpdateModel<CProfileModel> update(this);
     Profiles.clear();
 
     QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_FILE_NAME;
     QFile profiles_file(profiles_file_name);
     if(false == profiles_file.open(QIODevice::ReadOnly))
     {
-        //TODO:
-        //add default profiles
-        PProfile def_profile(new CProfile);
-        def_profile->Name = "<default>";
-        Profiles.push_back(def_profile);
-
-        PProfile profile1(new CProfile);
-        profile1->Name = "<def_profile1>";
-        Profiles.push_back(profile1);
-
-        PProfile profile2(new CProfile);
-        profile2->Name = "<def_profile2>";
-        Profiles.push_back(profile2);
+        AddDefaultProfiles();
         return;
     }
 
@@ -248,7 +259,6 @@ void CProfileModel::Save()
         stream << profile->TimestampFont;
     }
 }
-
 bool CProfile::Compare(const CProfile &rop) const
 {
     const sl::CProfile* sl_profile = this;

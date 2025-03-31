@@ -2,9 +2,12 @@
 #include <QDataStream>
 #include <QCoreApplication>
 #include <QItemSelectionModel>
+#include <QMimeData>
+#include <qdir.h>
+#include "Settings.h"
 #include "VdeoListModel.h"
 
-constexpr const char* VIDEO_LIST_FILE_NAME = "/list.dat";
+constexpr const char* VIDEO_LIST_FILE_NAME = "/videos.cfg";
 
 CVideoItemModel::CVideoItemModel(QObject* parent) : QAbstractItemModel(parent)
 {
@@ -27,7 +30,12 @@ QVariant CVideoItemModel::data(const QModelIndex &index, int role) const
         const PVideoItem pi = Get(index);
         switch(index.column())
         {
-        case COLUMN_VIDEO: return pi->VideoFilePath;
+        case COLUMN_VIDEO:
+        {
+            if(Settings.ShowFullPath)
+                return pi->VideoFilePath;
+            return QDir(pi->VideoFilePath).dirName();
+        }
         case COLUMN_STATE: return GetStateString(pi->State);
         case COLUMN_RESULT: return pi->ResultString;
         }
@@ -49,7 +57,7 @@ QVariant CVideoItemModel::headerData(int section, Qt::Orientation orientation, i
     {
         switch(section)
         {
-        case COLUMN_VIDEO: return "Video File";
+        case COLUMN_VIDEO: return "Video";
         case COLUMN_STATE: return "State";
         case COLUMN_RESULT: return "Result";
         }
@@ -58,25 +66,50 @@ QVariant CVideoItemModel::headerData(int section, Qt::Orientation orientation, i
 }
 void CVideoItemModel::sort(int column, Qt::SortOrder order)
 {
-    //TODO:
     if(COLUMN_VIDEO == column)
     {
-        beginResetModel();
+        CUpdateModel<CVideoItemModel> update(this);
         if(Qt::AscendingOrder == order)
             std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->VideoFilePath < item2->VideoFilePath;});
         else
             std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->VideoFilePath > item2->VideoFilePath;});
-        endResetModel();
     }
     else if(COLUMN_STATE == column)
     {
-        beginResetModel();
+        CUpdateModel<CVideoItemModel> update(this);
         if(Qt::AscendingOrder == order)
             std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->State < item2->State;});
         else
             std::sort(Items.begin(), Items.end(), [](const PVideoItem& item1, const PVideoItem& item2) {return item1->State > item2->State;});
-        endResetModel();
     }
+}
+QStringList CVideoItemModel::mimeTypes() const
+{
+    //TEST:
+    // QStringList sl;
+    //sl << "application/vnd.text.list";
+    // sl << "image/jpg";
+    // return sl;
+    return QAbstractItemModel::mimeTypes();
+}
+Qt::DropActions CVideoItemModel::supportedDropActions() const
+{
+    return Qt::CopyAction;
+}
+bool CVideoItemModel::canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const
+{
+    //TODO: QWindowsMimeRegistry::registerMimeType: Failed to register clipboard format for
+    //QString str;
+    //data->data(str);
+    //QStringList sl = data->formats();
+    //qDebug() << "CVideoItemModel::canDropMimeData()" << action << " mime: " << str;
+    return true;
+}
+bool CVideoItemModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent)
+{
+    //TODO: this doesn`t called
+    qDebug() << "CVideoItemModel::dropMimeData()";
+    return QAbstractItemModel::dropMimeData(data, action, row, 0, parent);
 }
 void CVideoItemModel::Add(QString vide_file_path)
 {
@@ -94,14 +127,13 @@ void CVideoItemModel::Add(QString vide_file_path)
 }
 void CVideoItemModel::Add(const QStringList &file_names)
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     for(const auto& file_name : file_names)
         Add(file_name);
-    endResetModel();
 }
 void CVideoItemModel::RemoveFailed()
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     for(auto item_i = Items.begin(); item_i != Items.end();)
     {
         PVideoItem item = *item_i;
@@ -110,11 +142,10 @@ void CVideoItemModel::RemoveFailed()
         else
             ++item_i;
     }
-    endResetModel();
 }
 void CVideoItemModel::RemoveSelected(QItemSelectionModel* sm)
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     QItemSelection is = sm->selection();
     QModelIndexList mil = is.indexes();
     for(auto mi = mil.begin(); mi != mil.end(); ++mi)
@@ -133,11 +164,10 @@ void CVideoItemModel::RemoveSelected(QItemSelectionModel* sm)
         else
             ++item_i;
     }
-    endResetModel();
 }
 void CVideoItemModel::RemoveCompleted()
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     for(auto item_i = Items.begin(); item_i != Items.end();)
     {
         PVideoItem item = *item_i;
@@ -146,18 +176,16 @@ void CVideoItemModel::RemoveCompleted()
         else
             ++item_i;
     }
-    endResetModel();
 }
 void CVideoItemModel::RemoveAll()
 {
     //TODO: CurrentVideo
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     Items.clear();
-    endResetModel();
 }
 void CVideoItemModel::ResetSelected(QItemSelectionModel *sm)
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     QItemSelection is = sm->selection();
     QModelIndexList mil = is.indexes();
 
@@ -169,11 +197,10 @@ void CVideoItemModel::ResetSelected(QItemSelectionModel *sm)
         item->State = PIS_WAIT;
         item->ResultString = "";
     }
-    endResetModel();
 }
 void CVideoItemModel::ResetAll()
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     for(PVideoItem& item : Items)
     {
         if(item == CurrentVideo)
@@ -181,7 +208,6 @@ void CVideoItemModel::ResetAll()
         item->State = PIS_WAIT;
         item->ResultString = "";
     }
-    endResetModel();
 }
 PVideoItem CVideoItemModel::Get(int row)
 {
@@ -236,7 +262,7 @@ void CVideoItemModel::Add(PVideoItem item)
 }
 void CVideoItemModel::Load()
 {
-    beginResetModel();
+    CUpdateModel<CVideoItemModel> update(this);
     Items.clear();
 
     QString list_file_name = QCoreApplication::applicationDirPath() + VIDEO_LIST_FILE_NAME;
@@ -265,8 +291,6 @@ void CVideoItemModel::Load()
         video_item->ResultString = result_string;
         Add(video_item);
     }
-
-    endResetModel();
 }
 
 void CVideoItemModel::Save()

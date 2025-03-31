@@ -34,6 +34,12 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
+    //drag and drop
+    QStringList mimeTypes() const override;
+    Qt::DropActions supportedDropActions() const override;
+    bool canDropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) const override;
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
+
     //add
     void Add(QString vide_file_path);
     void Add(const QStringList& file_names);
