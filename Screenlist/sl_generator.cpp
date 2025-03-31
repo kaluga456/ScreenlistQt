@@ -7,24 +7,22 @@
 using namespace sl;
 
 constexpr const char* HEADER_FORMAT_STRING = "File Name: {:s}\nFile Size: {:s}\nResolution: {:d}x{:d}\nDuration: {:s}";
+constexpr const char* HEADER_FORMAT_COMPACT_STRING = "File Name: {:s}\nFile Info: {:s} | {:d}x{:d} | {:s}";
 
 //TODO: sanity check
 constexpr int MIN_FRAME_SIZE = 100;
 constexpr int MAX_FRAME_SIZE = 4096;
 constexpr int MIN_PROFILE_GRID = 1;
 constexpr int MAX_PROFILE_GRID = 10;
-
+//////////////////////////////////////////////////////////////////////////////
 std::string GetDurationString(qint64 duration)
 {
     constexpr const char* format_string = "{:02d}:{:02d}:{:02d}";
-
     const int secs = duration / 1000;
     const int seconds = secs % 60;
     const int minutes = (secs / 60) % 60;
     const int hours = secs / 3600;
-
-    std::string result = std::format(format_string, hours, minutes, seconds);
-    return result;
+    return std::format(format_string, hours, minutes, seconds);
 }
 std::string GetFileSizeString(const qint64& file_size)
 {
@@ -81,7 +79,6 @@ static Qt::Alignment GetTimastampAlignment(int timestamp)
     }
     return Qt::Alignment();
 }
-
 QString GetOutputFilePath(QString video_file_path, const COptions& options)
 {
     QString output_path = options.OutputPath;
@@ -98,7 +95,7 @@ QString GetOutputFilePath(QString video_file_path, const COptions& options)
     QString file_name{in_path.dirName() + ".jpg"};
     return output_path + file_name;
 }
-
+//////////////////////////////////////////////////////////////////////////////
 CGenerator::CGenerator()
 {
 }
@@ -149,12 +146,12 @@ int CGenerator::Generate(QString video_file_path,
     const int text_padding = profile.ImageWidth * 0.005;
     if(profile.HeaderType)
     {
-        std::unique_ptr<QPixmap> Pixmap(new QPixmap{profile.ImageWidth, 100});
-        std::unique_ptr<QPainter> Painter(new QPainter{Pixmap.get()});
+        std::unique_ptr<QPixmap> pixmap(new QPixmap{profile.ImageWidth, 100});
+        std::unique_ptr<QPainter> painter(new QPainter{pixmap.get()});
         QRect rect;
         QRect bounds;
-        QString sample_text("line1\nline2\nline3\nline4");
-        Painter->drawText(rect, 0, sample_text, &bounds);
+        QString sample_text((profile.HeaderType == HEADER_COMPACT) ? "line1\nline2" : "line1\nline2\nline3\nline4");
+        painter->drawText(rect, 0, sample_text, &bounds);
         header_height = text_padding + bounds.height() + text_padding;
     }
 
@@ -177,11 +174,24 @@ int CGenerator::Generate(QString video_file_path,
     //draw header
     if(profile.HeaderType)
     {
-        std::string header_text = std::format(HEADER_FORMAT_STRING,
-                                              video_file.GetFileName().toLatin1().data(),
-                                              GetFileSizeString(video_file_size),
-                                              frame_width, frame_height,
-                                              GetDurationString(duration));
+        std::string header_text;
+        if(profile.HeaderType == HEADER_COMPACT)
+        {
+            header_text = std::format(HEADER_FORMAT_COMPACT_STRING,
+                                      video_file.GetFileName().toLatin1().data(),
+                                      GetFileSizeString(video_file_size),
+                                      frame_width, frame_height,
+                                      GetDurationString(duration));
+        }
+        else
+        {
+            header_text = std::format(HEADER_FORMAT_COMPACT_STRING,
+                                      video_file.GetFileName().toLatin1().data(),
+                                      GetFileSizeString(video_file_size),
+                                      frame_width, frame_height,
+                                      GetDurationString(duration));
+        }
+
         QTextOption text_options;
         text_options.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         text_options.setWrapMode(QTextOption::NoWrap);
@@ -259,7 +269,7 @@ int CGenerator::Generate(QString video_file_path,
     //write output file
     if(false == Pixmap->save(output_file_path))
     {
-        result_string = "Unable to save file: " + output_file_path;
+        result_string = "Could not save file: " + output_file_path;
         return RESULT_FAILED;
     }
 

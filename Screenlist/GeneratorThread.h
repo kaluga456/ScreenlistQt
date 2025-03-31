@@ -7,8 +7,9 @@
 #include "ProfileList.h"
 #include "VideoItem.h"
 
+//TEST:
 #ifdef _DEBUG
-    #define SHALLOW_PROCESSING
+    //#define SHALLOW_PROCESSING
 #endif
 
 class CGeneratorThread : public QThread, public sl::IEventCallback
@@ -18,6 +19,7 @@ class CGeneratorThread : public QThread, public sl::IEventCallback
 public:
     explicit CGeneratorThread(QObject *parent = nullptr);
 
+    void Start(const PVideoItem& video);
     void Start(const PVideoItem& video, const PProfile& profile, const sl::COptions& options);
     void Stop();
 

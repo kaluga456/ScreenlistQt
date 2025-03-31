@@ -3,18 +3,18 @@
 
 #include <QString>
 
-//processing item state
+//video item processing state
 enum
 {
     //processing now 0...100%
-    PIS_MIN_PROCESSING = 0,
-    PIS_MAX_PROCESSING = 100,
+    VIS_MIN_PROCESSING = 0,
+    VIS_MAX_PROCESSING = 100,
 
-    PIS_WAIT, //ready to process
-    PIS_DONE, //processed successfully
-    PIS_FAILED, //processed with error
+    VIS_WAIT, //ready to process
+    VIS_DONE, //processed successfully
+    VIS_FAILED, //processed with error
 
-    PIS_SELECTED //for removal from list
+    VIS_SELECTED //for removal from list
 };
 
 QString GetStateString(int item_state);

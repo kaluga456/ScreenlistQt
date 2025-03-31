@@ -34,6 +34,7 @@ private slots:
     void onRemoveFailed();
     void onRemoveCompleted();
     void onRemoveAll();
+    void onProcessSelected();
     void onStartProcessing();
     void onStopProcessing();
     void onExit();
@@ -86,7 +87,6 @@ private:
     };
     int ProcessingState{PROCESS_NONE};
     CGeneratorThread GeneratorThread;
-    PVideoItem GetVideoToProcess();
 
     //video items list
     //PVideoItem CurrentVideo;
@@ -113,12 +113,13 @@ private:
 
     //overrides
     void closeEvent(QCloseEvent *event) override;
+    void keyPressEvent(QKeyEvent* event) override;
     //void dropEvent(QDropEvent *event) override;
 
     //controls
     void UpdateOutputDirs(int item_index = -1);
     void SwitchState(int state); //arg - PROCESS_ values
 
-    bool OpenURL(QString url);
+    void OpenURL(QString url, bool file = true);
 };
 #endif // MAINWINDOW_H

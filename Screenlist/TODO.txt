@@ -4,10 +4,14 @@ TODO:
 + video list view dbl click events
 - processing thread error handling
 + context menu
-- show full path option
++ show full path option
 - compact header draw
 - user defined header string
-- video filters
++ video filters
+- main app icon
+
+BUGS:
+
 
 NOTES:
 icons: https://fonts.google.com/icons

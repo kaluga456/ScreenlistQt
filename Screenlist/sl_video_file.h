@@ -1,6 +1,7 @@
 #ifndef SL_VIDEO_FILE_H
 #define SL_VIDEO_FILE_H
 
+#include <QSignalSpy>
 #include <QVideoFrame>
 #include <QVideoSink>
 #include <QMediaPlayer>
@@ -68,6 +69,10 @@ private:
 
     //current frame
     QImage Image;
+
+    //error
+    bool HasError{false};
+    void WaitSignal(QSignalSpy& signal_spy);
 
     //engine
     QMediaPlayer* MediaPlayer{nullptr}; //null for sample screenlist

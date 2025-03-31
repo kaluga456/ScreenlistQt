@@ -13,5 +13,7 @@
         <file>res/stop.svg</file>
         <file>res/sample_frame.jpg</file>
         <file>res/main_icon.ico</file>
+        <file>res/add_output.svg</file>
+        <file>res/open_output_dir.svg</file>
     </qresource>
 </RCC>

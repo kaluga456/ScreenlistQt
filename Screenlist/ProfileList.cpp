@@ -5,7 +5,7 @@
 #include "ProfileList.h"
 
 //profiles file
-constexpr const char* PROFILES_FILE_NAME = "/profiles.cfg";
+constexpr const char* PROFILES_CFG_NAME = "/profiles.cfg";
 constexpr quint32 PROFILES_FILE_HEADER = 0xF103A86C;
 constexpr quint32 PROFILES_FILE_VERSION = 1;
 constexpr quint32 MAX_PROFILES = 50;
@@ -179,7 +179,7 @@ void CProfileModel::Load()
     CUpdateModel<CProfileModel> update(this);
     Profiles.clear();
 
-    QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_FILE_NAME;
+    QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_CFG_NAME;
     QFile profiles_file(profiles_file_name);
     if(false == profiles_file.open(QIODevice::ReadOnly))
     {
@@ -235,7 +235,7 @@ void CProfileModel::Load()
 }
 void CProfileModel::Save()
 {
-    QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_FILE_NAME;
+    QString profiles_file_name = QCoreApplication::applicationDirPath() + PROFILES_CFG_NAME;
     QFile profiles_file(profiles_file_name);
     if(false == profiles_file.open(QIODevice::WriteOnly))
     {

@@ -22,6 +22,7 @@ protected:
 };
 
 #define SL_VERIFY(expression) {if(false == static_cast<bool>(expression)) throw SLExcString("SL_VERIFY(" #expression ")");}
+#define SL_VERIFY_MSG(expression, error_message) {if(false == static_cast<bool>(expression)) throw SLExcString(error_message);}
 
 }
 #endif // SL_ERROR_H

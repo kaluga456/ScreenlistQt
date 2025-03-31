@@ -110,6 +110,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->actionGitHub, &QAction::triggered, this, &MainWindow::onGitHub);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
+    connect(ui->actionProcessSelected, &QAction::triggered, this, &MainWindow::onProcessSelected);
     connect(ui->actionProcessAll, &QAction::triggered, this, &MainWindow::onStartProcessing);
     connect(ui->actionOpenVideo, &QAction::triggered, this, &MainWindow::onOpenVideo);
     connect(ui->actionOpenPreview, &QAction::triggered, this, &MainWindow::onOpenPreview);
@@ -123,6 +124,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pbTimestampFont, &QPushButton::clicked, this, &MainWindow::onTimestampFont);
     connect(ui->pbAddOutputDir, &QPushButton::clicked, this, &MainWindow::onAddOutputDir);
     connect(ui->pbOpenOutputDir, &QPushButton::clicked, this, &MainWindow::onOpenOutputDir);
+
+    //buttons
+    ui->pbAddOutputDir->setIcon(QIcon(":/res/add_output.svg"));
+    ui->pbAddOutputDir->setIconSize(QSize(16, 16));
+    ui->pbOpenOutputDir->setIcon(QIcon(":/res/open_output_dir.svg"));
+    ui->pbOpenOutputDir->setIconSize(QSize(16, 16));
 
     //processing thread events
     connect(&GeneratorThread, &CGeneratorThread::threadNotify, this, &MainWindow::threadNotify);
@@ -222,10 +229,8 @@ void MainWindow::doubleClickedVideoList(const QModelIndex &index)
     if(CVideoItemModel::COLUMN_VIDEO == index.column())
         OpenURL(video_item->VideoFilePath);
     else if(CVideoItemModel::COLUMN_RESULT == index.column())
-    {
-        if(PIS_DONE == video_item->State)
+        if(VIS_DONE == video_item->State)
             OpenURL(video_item->ResultString);
-    }
 }
 void MainWindow::contextMenuVideoList(const QPoint &pos)
 {
@@ -242,11 +247,11 @@ void MainWindow::contextMenuVideoList(const QPoint &pos)
     if(focused_video)
     {
         menu.addAction(ui->actionOpenVideo);
-        if(focused_video->State == PIS_DONE)
+        if(focused_video->State == VIS_DONE)
             menu.addAction(ui->actionOpenPreview);
         menu.addSeparator();
         menu.addAction(ui->actionBrowseToVideo);
-        if(focused_video->State == PIS_DONE)
+        if(focused_video->State == VIS_DONE)
             menu.addAction(ui->actionBrowseToPreview);
         menu.addSeparator();
     }
@@ -268,51 +273,48 @@ void MainWindow::contextMenuVideoList(const QPoint &pos)
     menu.addAction(ui->actionRemoveAll);
     menu.exec(rel_pos);
 }
-PVideoItem MainWindow::GetVideoToProcess()
-{
-    const int count = VideoItemList.rowCount();
-    for(int row = 0; row < count; ++row)
-    {
-        PVideoItem video = VideoItemList.Get(row);
-        Q_ASSERT(video);
-        if(video->State != PIS_WAIT)
-            continue;
-
-        //TODO: PROCESS_SELECTED
-        if(PROCESS_SELECTED == ProcessingState)
-            ;
-
-        return video;
-    }
-
-    SwitchState(PROCESS_NONE);
-    return nullptr;
-}
 PVideoItem MainWindow::GetFocusedVideo()
 {
     QItemSelectionModel* ism = ui->tableView->selectionModel();
     QModelIndex mi = ism->currentIndex();
     return VideoItemList.Get(mi);
 }
+void MainWindow::onProcessSelected()
+{
+    if(GeneratorThread.isRunning())
+        return;
+
+    QItemSelectionModel* sm = ui->tableView->selectionModel();
+    PVideoItem video_item = VideoItemList.GetVideoToProcess(sm);
+    if(nullptr == video_item)
+        return;
+
+    PProfile profile = GetCurrentProfile();
+    sl::COptions options;
+    options.OverwriteFiles = Settings.OverwriteFiles;
+    options.OutputPath = ui->cbOutputDir->currentIndex() ? ui->cbOutputDir->currentText() : "";
+    VideoItemList.CurrentVideo = video_item;
+
+    SwitchState(PROCESS_SELECTED);
+    GeneratorThread.Start(video_item, profile, options);
+}
 void MainWindow::onStartProcessing()
 {
     if(GeneratorThread.isRunning())
         return;
 
-    //TODO: PROCESS_SELECTED
-    SwitchState(PROCESS_ALL);
-    PVideoItem video_item = GetVideoToProcess();
+    PVideoItem video_item = VideoItemList.GetVideoToProcess();
     if(nullptr == video_item)
         return;
 
-    GeneratorThread.Stop();
     PProfile profile = GetCurrentProfile();
-
-    //TODO:
     sl::COptions options;
-    options.OverwriteFiles = true;
-    options.OutputPath = ui->cbOutputDir->currentIndex() ? ui->cbOutputDir->currentText() : "";
+    options.OverwriteFiles = Settings.OverwriteFiles;
+    if(ui->cbOutputDir->currentIndex() > 0)
+        options.OutputPath = ui->cbOutputDir->currentText();
     VideoItemList.CurrentVideo = video_item;
+
+    SwitchState(PROCESS_ALL);
     GeneratorThread.Start(video_item, profile, options);
 }
 void MainWindow::onStopProcessing()
@@ -323,38 +325,48 @@ void MainWindow::onStopProcessing()
 void MainWindow::threadNotify(int progress)
 {
     Q_ASSERT(VideoItemList.CurrentVideo);
+    if(nullptr == VideoItemList.CurrentVideo)
+        return;
+
     if(VideoItemList.CurrentVideo)
         VideoItemList.CurrentVideo->State = progress;
-
-    VideoItemList.Update(VideoItemList.CurrentVideo.get(), false);
+    VideoItemList.UpdateCurrent(false);
 }
 void MainWindow::threadFinished(int result, const QString &result_string)
 {
+    Q_ASSERT(VideoItemList.CurrentVideo);
     if(nullptr == VideoItemList.CurrentVideo)
-    {
-        Q_ASSERT(0);
         return;
-    }
 
-    VideoItemList.CurrentVideo->State = result;
+    switch(result)
+    {
+    case sl::RESULT_SUCCESS:
+        VideoItemList.CurrentVideo->State = VIS_DONE;
+        break;
+    case sl::RESULT_FAILED:
+        VideoItemList.CurrentVideo->State = VIS_FAILED;
+        break;
+    default:
+        VideoItemList.CurrentVideo->State = VIS_WAIT;
+    }
     VideoItemList.CurrentVideo->ResultString = result_string;
-    VideoItemList.Update(VideoItemList.CurrentVideo.get());
+    VideoItemList.UpdateCurrent();
+    VideoItemList.CurrentVideo = nullptr;
 
     if(PROCESS_NONE == ProcessingState)
         return;
 
-    PVideoItem video_item = GetVideoToProcess();
+    QItemSelectionModel* sm = (PROCESS_SELECTED == ProcessingState) ? ui->tableView->selectionModel() : nullptr;
+    PVideoItem video_item = VideoItemList.GetVideoToProcess(sm);
     if(nullptr == video_item)
     {
+        VideoItemList.CurrentVideo = nullptr;
         SwitchState(PROCESS_NONE);
         return;
     }
 
-    GeneratorThread.Stop();
-    PProfile profile = GetCurrentProfile();
-    sl::COptions options;
     VideoItemList.CurrentVideo = video_item;
-    GeneratorThread.Start(video_item, profile, options);
+    GeneratorThread.Start(video_item);
 }
 void MainWindow::SaveSettings()
 {
@@ -421,6 +433,24 @@ void MainWindow::closeEvent(QCloseEvent *event)
         QWidget::closeEvent(event);
     else
         QApplication::exit(0);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    //TEST:
+#ifdef _DEBUG
+    if(Qt::Key_F5 == event->key())
+    {
+        OpenURL("file:///d:/video/test/data sp.mp4");
+    }
+#endif
+
+    if(Qt::Key_Delete == event->key())
+    {
+        if(ui->actionRemoveSelected->isEnabled())
+            ui->actionRemoveSelected->trigger();
+        QMainWindow::keyPressEvent(event);
+    }
 }
 // void MainWindow::dropEvent(QDropEvent *event)
 // {
@@ -539,11 +569,7 @@ void MainWindow::onProfilePreview()
         return;
     }
     QString file_path = options.OutputPath + "//" + sl::PREVIEW_FILE_NAME;
-    if(false == OpenURL(file_path))
-    {
-        ShowErrorBox("Can`t open preview image\n" + file_path);
-        return;
-    }
+    OpenURL(file_path);
 }
 void MainWindow::onShowFullPath(bool checked)
 {
@@ -568,7 +594,7 @@ void MainWindow::onSettings()
 }
 void MainWindow::onGitHub()
 {
-    OpenURL(APP_URL);
+    OpenURL(APP_URL, false);
 }
 void MainWindow::onAbout()
 {
@@ -589,7 +615,7 @@ void MainWindow::onOpenVideo()
 void MainWindow::onOpenPreview()
 {
     PVideoItem video = GetFocusedVideo();
-    if(nullptr == video || video->State != PIS_DONE)
+    if(nullptr == video || video->State != VIS_DONE)
         return;
     OpenURL(video->ResultString);
 }
@@ -606,7 +632,7 @@ void MainWindow::onBrowseToVideo()
 void MainWindow::onBrowseToPreview()
 {
     PVideoItem video = GetFocusedVideo();
-    if(nullptr == video || video->State != PIS_DONE)
+    if(nullptr == video || video->State != VIS_DONE)
         return;
 
     QDir dir(video->ResultString);
@@ -658,7 +684,6 @@ void MainWindow::onAddOutputDir()
 
     UpdateOutputDirs(item_index);
 }
-
 void MainWindow::onOpenOutputDir()
 {
     if(0 >= ui->cbOutputDir->currentIndex())
@@ -698,7 +723,7 @@ void MainWindow::SwitchState(int state)
     const bool idle = (PROCESS_NONE == state);
 
     //TODO:
-    ui->tableView->setEnabled(idle);
+    //ui->tableView->setEnabled(idle);
     ui->actionStartProcessing->setEnabled(idle);
     ui->actionProcessAll->setEnabled(idle);
     ui->actionProcessSelected->setEnabled(idle);
@@ -708,11 +733,20 @@ void MainWindow::SwitchState(int state)
     ui->actionRemoveFailed->setEnabled(idle);
     ui->actionRemoveAll->setEnabled(idle);
 
+    ui->pbAddOutputDir->setEnabled(idle);
+    ui->cbOutputDir->setEnabled(idle);
+
+    // if(idle)
+    //     VideoItemList.CurrentVideo = nullptr;
+
     ProcessingState = state;
 }
-bool MainWindow::OpenURL(QString url)
+void MainWindow::OpenURL(QString url, bool file /*= true*/)
 {
-    return QDesktopServices::openUrl(QUrl(url, QUrl::TolerantMode));
+    if(file)
+        url.prepend("file:///");
+    if(false == QDesktopServices::openUrl(QUrl(url, QUrl::TolerantMode)))
+        ShowErrorBox("Can`t open path\n" + url);
 }
 void MainWindow::ShowErrorBox(QString error_text)
 {

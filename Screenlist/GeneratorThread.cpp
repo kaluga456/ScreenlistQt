@@ -6,6 +6,13 @@
 CGeneratorThread::CGeneratorThread(QObject *parent) : QThread{parent}
 {
 }
+
+void CGeneratorThread::Start(const PVideoItem &video)
+{
+    Stop();
+    VideoFilePath = video->VideoFilePath;
+    start();
+}
 void CGeneratorThread::Start(const PVideoItem& video, const PProfile& profile, const sl::COptions &options)
 {
     Stop();
@@ -22,7 +29,6 @@ void CGeneratorThread::Start(const PVideoItem& video, const PProfile& profile, c
     Profile.TimestampFont = profile->TimestampFont;
     Options = options;
 
-    //TODO:
     start();
 }
 void CGeneratorThread::Stop()
@@ -32,9 +38,7 @@ void CGeneratorThread::Stop()
 }
 void CGeneratorThread::run()
 {
-    //qDebug() << "CGeneratorThread start: " << QThread::currentThreadId();
-
-    int result = PIS_FAILED;
+    int result = VIS_FAILED;
     QString result_string;
 
 #ifndef SHALLOW_PROCESSING
@@ -43,11 +47,8 @@ void CGeneratorThread::run()
     result = shallow_proc(result_string);
 #endif //SHALLOW_PROCESSING
 
-    emit threadFinished((result == sl::RESULT_SUCCESS) ? PIS_DONE : PIS_FAILED, result_string);
-
-    //qDebug() << "CGeneratorThread end: " << QThread::currentThreadId();
+    emit threadFinished(result, result_string);
 }
-
 int CGeneratorThread::generate(QString& result_string)
 {
     return sl::generate(VideoFilePath, Profile, Options, result_string, this);

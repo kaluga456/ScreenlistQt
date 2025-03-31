@@ -54,13 +54,14 @@ public:
 
     //access
     PVideoItem Get(const QModelIndex &index);
-    const PVideoItem Get(const QModelIndex &index) const;
     PVideoItem Get(int row);
-    const PVideoItem Get(int row) const;
     int GetRow(CVideoItem* video_item) const;
 
+    //if sm = null get any available video
+    PVideoItem GetVideoToProcess(QItemSelectionModel* sm = nullptr);
+
     //
-    void Update(CVideoItem* video_item, bool full = true);
+    void UpdateCurrent(bool full = true);
 
     //serialization
     void Load();
