@@ -16,7 +16,7 @@ constexpr int SAMPLE_FRAME_SIZE = 230456;
 constexpr int SAMPLE_FRAME_DURATION = 0;
 constexpr int SAMPLE_FRAME_WIDTH = 320;
 constexpr int SAMPLE_FRAME_HEIGHT = 200;
-
+//////////////////////////////////////////////////////////////////////////////
 class CVideoFile : public QObject
 {
     Q_OBJECT
@@ -42,24 +42,6 @@ private slots:
     void errorOccurred(QMediaPlayer::Error error, const QString &errorString);
     void mediaStatusChanged(QMediaPlayer::MediaStatus status);
     void positionChanged(qint64 position);
-
-    // void activeTracksChanged()
-    // void audioBufferOutputChanged()
-    // void audioOutputChanged()
-    // void bufferProgressChanged(float filled)
-    // void durationChanged(qint64 duration)
-    // void errorChanged()
-    // void hasAudioChanged(bool available)
-    // void hasVideoChanged(bool videoAvailable)
-    // void loopsChanged()
-    // void metaDataChanged()
-    // void playbackRateChanged(qreal rate)
-    // void playbackStateChanged(QMediaPlayer::PlaybackState newState)
-    // void playingChanged(bool playing)
-    // void seekableChanged(bool seekable)
-    // void sourceChanged(const QUrl &media)
-    // void tracksChanged()
-    // void videoOutputChanged()
 
 private:
     //video attributes

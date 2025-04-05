@@ -7,13 +7,9 @@
 
 using namespace sl;
 
-//header painter
-constexpr int HEADER_VERTICAL_PADDING = 5; //vertical padding, px
-
 constexpr int SIGNAL_WAIT_TIMEOUT = 3000;
-CVideoFile::CVideoFile(QString video_file_path) :
-    MediaPlayer{nullptr},
-    VideoSink{nullptr}
+//////////////////////////////////////////////////////////////////////////////
+CVideoFile::CVideoFile(QString video_file_path) : MediaPlayer{nullptr}, VideoSink{nullptr}
 {
     //profile preview
     if(video_file_path.isEmpty())
@@ -43,10 +39,8 @@ CVideoFile::CVideoFile(QString video_file_path) :
     //init video sink
     VideoSink = new QVideoSink;
     QSignalSpy ssvs(VideoSink, &QVideoSink::videoFrameChanged);
-    //SL_VERIFY(ssvs.isValid())
     MediaPlayer->setVideoSink(VideoSink);
     WaitSignal(ssvs);
-    //SL_VERIFY(ssvs.wait(SIGNAL_WAIT_TIMEOUT));
 
     //get video resolution
     QVideoFrame video_frame = VideoSink->videoFrame();
@@ -127,8 +121,6 @@ const QImage& CVideoFile::GetFrameImage(qint64 pos)
     QSignalSpy ssvs(VideoSink, &QVideoSink::videoFrameChanged);
     MediaPlayer->setPosition(pos);
     WaitSignal(ssvs);
-    //SL_VERIFY(ssvs.isValid());
-    //SL_VERIFY(ssvs.wait(SIGNAL_WAIT_TIMEOUT));
 
     //get frame
     QVideoFrame vf = VideoSink->videoFrame();

@@ -185,7 +185,7 @@ int CGenerator::Generate(QString video_file_path,
         }
         else
         {
-            header_text = std::format(HEADER_FORMAT_COMPACT_STRING,
+            header_text = std::format(HEADER_FORMAT_STRING,
                                       video_file.GetFileName().toLatin1().data(),
                                       GetFileSizeString(video_file_size),
                                       frame_width, frame_height,
