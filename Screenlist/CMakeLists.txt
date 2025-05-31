@@ -16,27 +16,27 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 find_package(Qt6 REQUIRED COMPONENTS Gui)
 
 set(PROJECT_SOURCES
-        main.cpp
-        MainWindow.cpp
-        MainWindow.h
-        MainWindow.ui
+    main.cpp
+    MainWindow.cpp MainWindow.h MainWindow.ui
+    about.h
+    sl_error.cpp sl_error.h
+    sl_generator.cpp sl_generator.h
+    sl_interface.cpp sl_interface.h
+    sl_options.cpp sl_options.h
+    sl_profile.cpp sl_profile.h
+    sl_video_file.cpp sl_video_file.h
+    GeneratorThread.cpp GeneratorThread.h
+    Settings.h Settings.cpp
+    ProfileList.h ProfileList.cpp
+    VideoItem.h VideoItem.cpp
+    VdeoListModel.h VdeoListModel.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ScreenList
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        sl_error.cpp sl_error.h sl_generator.cpp sl_generator.h sl_interface.cpp sl_interface.h sl_options.cpp sl_options.h sl_profile.cpp sl_profile.h sl_video_file.cpp sl_video_file.h
-        GeneratorThread.cpp GeneratorThread.h resources.qrc
-        about.h
-        Settings.h Settings.cpp
-        ProfileList.h ProfileList.cpp
-        VideoItem.h VideoItem.cpp
-        VdeoListModel.h VdeoListModel.cpp
-        VdeoListModel.cpp VdeoListModel.h VideoItem.cpp VideoItem.h
-        VdeoListModel.cpp VdeoListModel.h VideoItem.cpp VideoItem.h
-        TODO.txt
-
+        resources.qrc
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ScreenList APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

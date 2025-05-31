@@ -116,7 +116,8 @@ void CProfileModel::SetCurrentRow(int row)
 }
 PProfile CProfileModel::getProfile(int row) const
 {
-    Q_ASSERT(row < Profiles.size());
+    qDebug() << Profiles.size();
+    Q_ASSERT(row < static_cast<int>(Profiles.size()));
     if(row >= Profiles.size())
         return PProfile();
     return Profiles[row];
