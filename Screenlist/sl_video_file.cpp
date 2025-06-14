@@ -33,8 +33,8 @@ CVideoFile::CVideoFile(QString video_file_path) : MediaPlayer{nullptr}, VideoSin
     MediaPlayer->setPosition(0);
     MediaPlayer->pause();
     WaitSignal(ssmp);
-    SL_VERIFY_MSG(true == MediaPlayer->hasVideo(), "Not a video file");
-    SL_VERIFY_MSG(MediaPlayer->playbackState() == QMediaPlayer::PausedState, "Could not play video");
+    sl::Verify(true == MediaPlayer->hasVideo(), "Not a video file");
+    sl::Verify(MediaPlayer->playbackState() == QMediaPlayer::PausedState, "Could not play video");
 
     //init video sink
     VideoSink = new QVideoSink;
@@ -78,7 +78,7 @@ void CVideoFile::WaitSignal(QSignalSpy& signal_spy)
 
     //check error
     if(QMediaPlayer::NoError != MediaPlayer->error())
-        throw SLExcString(MediaPlayer->errorString());
+        throw sl::SLExc(MediaPlayer->errorString());
 }
 QString CVideoFile::GetFileName() const
 {
@@ -124,7 +124,7 @@ const QImage& CVideoFile::GetFrameImage(qint64 pos)
 
     //get frame
     QVideoFrame vf = VideoSink->videoFrame();
-    SL_VERIFY_MSG(vf.isValid(), "Could not get video frame");
+    sl::Verify(vf.isValid(), "Could not get video frame");
 
     Image = vf.toImage();
     return Image;

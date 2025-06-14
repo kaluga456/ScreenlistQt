@@ -85,7 +85,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->cbTimestamp->setModel(&TimestampModel);
 
     //init profiles
-    const int row = ProfileModel.getProfileRow(Settings.ProfileName);
+    Q_ASSERT(ProfileModel.rowCount() > 0);
+    int row = ProfileModel.getProfileRow(Settings.ProfileName);
+    if(row < 0) row = 0;
     ui->cbProfiles->setModel(&ProfileModel);
     ui->cbProfiles->setCurrentIndex(row);
     UpdateProfileView();
@@ -303,11 +305,17 @@ void MainWindow::onStartProcessing()
     if(GeneratorThread.isRunning())
         return;
 
+    PProfile profile = GetCurrentProfile();
+    if(nullptr == profile)
+    {
+        ShowErrorBox("No profile selected");
+        return;
+    }
+
     PVideoItem video_item = VideoItemList.GetVideoToProcess();
     if(nullptr == video_item)
         return;
 
-    PProfile profile = GetCurrentProfile();
     sl::COptions options;
     options.OverwriteFiles = Settings.OverwriteFiles;
     if(ui->cbOutputDir->currentIndex() > 0)
@@ -441,7 +449,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 #ifdef _DEBUG
     if(Qt::Key_F5 == event->key())
     {
-        OpenURL("file:///d:/video/test/data sp.mp4");
+        //OpenURL("file:///d:/video/test/data sp.mp4");
     }
 #endif
 

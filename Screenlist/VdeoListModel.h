@@ -14,9 +14,9 @@ public:
     //columns
     enum : int
     {
-        COLUMN_VIDEO,
-        COLUMN_STATE,  //image or progress bar
-        COLUMN_RESULT, //error description if any
+        COLUMN_VIDEO,  //video file name
+        COLUMN_STATE,
+        COLUMN_RESULT, //result or error description
 
         COLUMNS_COUNT
     };

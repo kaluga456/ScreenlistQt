@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QDir>
 #include <format>
+#include "sl_error.h"
 #include "sl_video_file.h"
 #include "sl_generator.h"
 
@@ -26,27 +27,36 @@ std::string GetDurationString(qint64 duration)
 }
 std::string GetFileSizeString(const qint64& file_size)
 {
+    //common sizes
+    enum : qint64
+    {
+        KILOBYTE = 1024ll,
+        MEGABYTE = KILOBYTE * KILOBYTE,
+        GIGABYTE = MEGABYTE * KILOBYTE,
+        TERABYTE = GIGABYTE * KILOBYTE
+    };
+
+    //human readable size
     std::string size_string;
     uint32_t size_value = 0;
-    const qint64 TERABYTE = qint64(1024 * 1024) * qint64(1024 * 1024);
     if (file_size >= TERABYTE)
     {
         size_value = static_cast<uint32_t>(file_size / TERABYTE);
         size_string = std::format("{:d} TB", size_value);
     }
-    if (file_size >= 1024 * 1024 * 1024)
+    else if (file_size >= GIGABYTE)
     {
-        size_value = static_cast<uint32_t>(file_size / (1024 * 1024 * 1024));
+        size_value = static_cast<uint32_t>(file_size / GIGABYTE);
         size_string = std::format("{:d} GB", size_value);
     }
-    else if (file_size >= 1024 * 1024)
+    else if (file_size >= MEGABYTE)
     {
-        size_value = static_cast<uint32_t>(file_size / (1024 * 1024));
+        size_value = static_cast<uint32_t>(file_size / MEGABYTE);
         size_string = std::format("{:d} MB", size_value);
     }
-    else if (file_size >= 1024)
+    else if (file_size >= KILOBYTE)
     {
-        size_value = static_cast<uint32_t>(file_size / 1024);
+        size_value = static_cast<uint32_t>(file_size / KILOBYTE);
         size_string = std::format("{:d} KB", size_value);
     }
     else
@@ -55,7 +65,7 @@ std::string GetFileSizeString(const qint64& file_size)
         size_string = std::format("{:d} B", size_value);
     }
 
-    //TODO: check big int
+    //size in bytes
     std::string bytes_string;
     if (file_size)
         bytes_string = std::format(" ({:d} bytes)", file_size);

@@ -185,6 +185,7 @@ void CProfileModel::Load()
     if(false == profiles_file.open(QIODevice::ReadOnly))
     {
         AddDefaultProfiles();
+        CurrentRow = 0;
         return;
     }
 
@@ -218,20 +219,9 @@ void CProfileModel::Load()
 
     if(0 == Profiles.size())
     {
-        //TODO:
         //add default profiles
-        PProfile def_profile(new CProfile);
-        def_profile->Name = "<default>";
-        Profiles.push_back(def_profile);
-
-        PProfile profile1(new CProfile);
-        profile1->Name = "<def_profile1>";
-        Profiles.push_back(profile1);
-
-        PProfile profile2(new CProfile);
-        profile2->Name = "<def_profile2>";
-        Profiles.push_back(profile2);
-        return;
+        AddDefaultProfiles();
+        CurrentRow = 0;
     }
 }
 void CProfileModel::Save()
